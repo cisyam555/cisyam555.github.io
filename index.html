@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>我的博客 | Home</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+    <!-- 导航栏 -->
+    <nav class="nav">
+        <div class="nav-inner">
+            <a href="index.html" class="logo">My<span>Blog</span></a>
+            <ul class="nav-links">
+                <li><a href="index.html" class="active">首页</a></li>
+                <li><a href="about.html">关于我</a></li>
+                <li><a href="https://github.com/" target="_blank">GitHub</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <!-- 个人头部 -->
+    <header class="hero">
+        <div class="container">
+            <div class="avatar">🌸</div>
+            <h1>欢迎来到我的博客</h1>
+            <p>一名正在学习编程的学生 ✨ 在这里记录我的学习笔记、项目作品和生活点滴。</p>
+            <div class="socials">
+                <a class="social-btn" href="https://github.com/" target="_blank">🐙 GitHub</a>
+                <a class="social-btn" href="mailto:you@example.com">📧 邮箱</a>
+                <a class="social-btn" href="about.html">👋 关于我</a>
+            </div>
+        </div>
+    </header>
+
+    <main class="container">
+
+        <!-- 搜索框 -->
+        <div class="search-box">
+            <input type="text" id="searchInput" placeholder="搜索文章标题或标签…">
+        </div>
+
+        <!-- 文章列表 -->
+        <section>
+            <h2 class="section-title"><span class="dot"></span>最新文章</h2>
+
+            <div class="post-list" id="postList">
+
+                <a class="post-card" href="posts/welcome.html"
+                   data-title="你好，世界 我的第一篇博客" data-tags="随笔">
+                    <div class="post-meta">
+                        <span class="tag tag-pink">随笔</span>
+                        <span>2026-09-08</span>
+                    </div>
+                    <h2>你好，世界：我的第一篇博客</h2>
+                    <p>终于搭好了自己的博客！这篇文章记录了我为什么开始写博客，以及这个博客是怎么用 GitHub Pages 搭建的……</p>
+                </a>
+
+                <a class="post-card" href="posts/python-note.html"
+                   data-title="Python 学习笔记 装饰器 生成器" data-tags="Python 学习笔记">
+                    <div class="post-meta">
+                        <span class="tag tag-green">Python</span>
+                        <span>2026-09-05</span>
+                    </div>
+                    <h2>Python 学习笔记：装饰器与生成器</h2>
+                    <p>装饰器本质上是"接收函数、返回函数"的高阶函数；生成器用 yield 惰性产出数据，能节省大量内存……</p>
+                </a>
+
+                <a class="post-card" href="posts/project-blog.html"
+                   data-title="项目展示 个人博客 GitHub Pages" data-tags="项目 前端">
+                    <div class="post-meta">
+                        <span class="tag tag-blue">项目</span>
+                        <span>2026-09-08</span>
+                    </div>
+                    <h2>项目展示：用 GitHub Pages 搭建个人博客</h2>
+                    <p>纯 HTML/CSS/JS 实现，无需任何构建工具，推送代码到 GitHub 仓库即可自动上线，免费又省心……</p>
+                </a>
+
+                <a class="post-card" href="posts/morandi.html"
+                   data-title="设计分享 莫兰迪色系 配色" data-tags="设计 随笔">
+                    <div class="post-meta">
+                        <span class="tag tag-yellow">设计</span>
+                        <span>2026-09-01</span>
+                    </div>
+                    <h2>设计分享：为什么我喜欢莫兰迪色系</h2>
+                    <p>低饱和度的颜色柔和耐看，长时间阅读也不累眼。这篇分享了博客配色方案的选取思路……</p>
+                </a>
+
+            </div>
+
+            <p class="no-result" id="noResult">没有找到匹配的文章 😢</p>
+        </section>
+
+    </main>
+
+    <footer class="footer">
+        <div class="container">
+            <p>© 2026 我的博客 · 用 ❤️ 与 GitHub Pages 构建</p>
+        </div>
+    </footer>
+
+    <script src="js/main.js"></script>
+</body>
+</html>

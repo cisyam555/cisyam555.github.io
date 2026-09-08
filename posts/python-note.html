@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Python 学习笔记：装饰器与生成器 | 我的博客</title>
+    <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+
+    <nav class="nav">
+        <div class="nav-inner">
+            <a href="../index.html" class="logo">My<span>Blog</span></a>
+            <ul class="nav-links">
+                <li><a href="../index.html">首页</a></li>
+                <li><a href="../about.html">关于我</a></li>
+                <li><a href="https://github.com/" target="_blank">GitHub</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <main class="container">
+        <a class="back-link" href="../index.html">← 返回首页</a>
+
+        <article class="article">
+            <h1>Python 学习笔记：装饰器与生成器</h1>
+            <div class="post-meta">
+                <span class="tag tag-green">Python</span>
+                <span>2026-09-05</span>
+                <span>· 阅读约 4 分钟</span>
+            </div>
+
+            <h2>装饰器：给函数"加buff"</h2>
+            <p>装饰器本质是一个<strong>接收函数、返回函数</strong>的高阶函数。比如想在每个函数调用前后打印日志，不用修改每个函数，套一层装饰器就行：</p>
+            <blockquote>
+                <code>@log</code> 等价于 <code>add = log(add)</code>——把原函数传进去，返回包装后的新函数。
+            </blockquote>
+            <p>两个易错点：① 包装函数最后一定要 <code>return wrapper</code>；② 记得用 <code>@functools.wraps(func)</code>，否则函数名会变成 wrapper。</p>
+
+            <h2>生成器：惰性产出，省内存</h2>
+            <p>普通函数用 <code>return</code> 返回一次就结束；生成器用 <code>yield</code> 可以产出多次，而且<strong>每次只在被需要时才算下一个值</strong>。</p>
+            <blockquote>
+                处理大文件时，<code>for line in f: yield line</code> 不会把整个文件读进内存，这是生成器最实用的场景。
+            </blockquote>
+            <p>另外生成器里的 <code>yield</code> 放在哪个缩进层级很重要——放在 <code>if</code> 里面才是"满足条件才产出"，我就因为缩进写错调试了半天 😅</p>
+        </article>
+    </main>
+
+    <footer class="footer">
+        <div class="container">
+            <p>© 2026 我的博客 · 用 ❤️ 与 GitHub Pages 构建</p>
+        </div>
+    </footer>
+
+</body>
+</html>
