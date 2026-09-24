@@ -347,6 +347,100 @@ a:hover {
     font-size: 15px;
 }
 
+/* ---------- 文章：引言段 ---------- */
+.article .lead {
+    font-size: 18px;
+    line-height: 1.9;
+    color: var(--ink);
+    padding: 18px 24px;
+    background: var(--bg-soft);
+    border-radius: 12px;
+    border-left: 4px solid var(--accent);
+    margin-bottom: 28px;
+}
+
+/* ---------- 文章：图片 ---------- */
+.article figure {
+    margin: 28px 0;
+    text-align: center;
+}
+
+.article img {
+    max-width: 100%;
+    height: auto;
+    border-radius: 12px;
+    box-shadow: var(--shadow);
+    border: 1px solid var(--line);
+}
+
+.article figcaption {
+    margin-top: 12px;
+    font-size: 14px;
+    color: var(--ink-light);
+    font-style: italic;
+}
+
+/* ---------- 文章：关键数据高亮框 ---------- */
+.article .callout {
+    background: linear-gradient(135deg, var(--bg-soft), #f5ece7);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 20px 24px;
+    margin: 24px 0;
+}
+
+.article .callout strong {
+    color: var(--accent);
+}
+
+.article .callout-data {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+    margin: 24px 0;
+}
+
+.article .stat {
+    flex: 1;
+    min-width: 140px;
+    background: var(--bg-card);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 18px 20px;
+    text-align: center;
+    box-shadow: var(--shadow);
+}
+
+.article .stat .num {
+    display: block;
+    font-size: 26px;
+    font-weight: 700;
+    color: var(--accent);
+    line-height: 1.2;
+}
+
+.article .stat .label {
+    display: block;
+    font-size: 13px;
+    color: var(--ink-light);
+    margin-top: 6px;
+}
+
+/* ---------- 文章：小标题编号 ---------- */
+.article h2 .sec-num {
+    display: inline-block;
+    width: 30px;
+    height: 30px;
+    line-height: 30px;
+    text-align: center;
+    border-radius: 50%;
+    background: var(--accent);
+    color: #fff;
+    font-size: 16px;
+    margin-right: 10px;
+    vertical-align: middle;
+}
+
 .back-link:hover {
     color: var(--accent);
 }
@@ -393,4 +487,6 @@ a:hover {
     .article, .about-card { padding: 28px 24px; }
     .post-card { padding: 22px 24px; }
     .nav-links { gap: 18px; }
+    .article .stat { min-width: 120px; padding: 14px; }
+    .article .stat .num { font-size: 22px; }
 }
