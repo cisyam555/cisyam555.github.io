@@ -21,7 +21,16 @@ FastDDS 共享内存、<code>ROS_DOMAIN_ID</code>、<code>--ipc=host</code>、ro
 根因和修法</strong>都记下来，附实测数据。</p>
 </blockquote>
 <p><strong>懒人版结论</strong>——如果只想抄三行，就抄这三行：</p>
-<pre class="astro-code astro-code-themes github-light github-dark" style="background-color:#fff;--shiki-dark-bg:#24292e;color:#24292e;--shiki-dark:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;" tabindex="0" data-language="bash"><code><span class="line"># 1) 显卡：容器用户要进宿主 render/video 组，并且把设备指到核显</span><span class="line">--group-add &quot;$(getent group render | cut -d: -f3)&quot; \</span><span class="line">--group-add &quot;$(getent group video  | cut -d: -f3)&quot; -e DRI_PRIME=pci-0000_00_02_0</span><span class="line">​</span><span class="line"># 2) 隔离：给每套仿真一个专属 DDS 域，并在容器内清掉共享内存残留</span><span class="line">-e ROS_DOMAIN_ID=42</span><span class="line">bash -lc 'rm -f /dev/shm/fastrtps_* /dev/shm/sem.fastrtps_* /dev/shm/fastdds_*; ...'</span><span class="line">​</span><span class="line"># 3) 容器里所有 ros2 CLI 都加 --no-daemon（daemon 会坏）</span><span class="line">ros2 service list --no-daemon</span></code></pre>
+<pre class="astro-code astro-code-themes github-light github-dark" style="background-color:#fff;--shiki-dark-bg:#24292e;color:#24292e;--shiki-dark:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;" tabindex="0" data-language="bash"><code><span class="line"># 1) 显卡：容器用户要进宿主 render/video 组，并且把设备指到核显</span>
+<span class="line">--group-add &quot;$(getent group render | cut -d: -f3)&quot; \</span>
+<span class="line">--group-add &quot;$(getent group video  | cut -d: -f3)&quot; -e DRI_PRIME=pci-0000_00_02_0</span>
+<span class="line">​</span>
+<span class="line"># 2) 隔离：给每套仿真一个专属 DDS 域，并在容器内清掉共享内存残留</span>
+<span class="line">-e ROS_DOMAIN_ID=42</span>
+<span class="line">bash -lc 'rm -f /dev/shm/fastrtps_* /dev/shm/sem.fastrtps_* /dev/shm/fastdds_*; ...'</span>
+<span class="line">​</span>
+<span class="line"># 3) 容器里所有 ros2 CLI 都加 --no-daemon（daemon 会坏）</span>
+<span class="line">ros2 service list --no-daemon</span></code></pre>
 <hr />
 <h2 id="0">0. 先交代环境</h2>
 <table>
@@ -72,7 +81,14 @@ FastDDS 共享内存、<code>ROS_DOMAIN_ID</code>、<code>--ipc=host</code>、ro
 <p>比赛环境为什么要 22.04：官方仿真包是按 Humble + Gazebo Classic 11 编的，
 而 Gazebo Classic 已经停止维护，24.04 上没有对应版本。套容器是最现实的选择。</p>
 <p>容器骨架大致长这样：</p>
-<pre class="astro-code astro-code-themes github-light github-dark" style="background-color:#fff;--shiki-dark-bg:#24292e;color:#24292e;--shiki-dark:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;" tabindex="0" data-language="bash"><code><span class="line">docker run --rm -it \</span><span class="line">  --name ican-sim \</span><span class="line">  --network host --ipc=host \</span><span class="line">  --device /dev/dri \</span><span class="line">  -e DISPLAY=&quot;$DISPLAY&quot; -e QT_X11_NO_MITSHM=1 \</span><span class="line">  -v /tmp/.X11-unix:/tmp/.X11-unix:rw \</span><span class="line">  -v &quot;$WS_HOST:/home/dev/ws:rw&quot; -w /home/dev/ws \</span><span class="line">  ican-humble:22.04 bash -lc 'source /opt/ros/humble/setup.bash; exec ros2 launch ...'</span></code></pre>
+<pre class="astro-code astro-code-themes github-light github-dark" style="background-color:#fff;--shiki-dark-bg:#24292e;color:#24292e;--shiki-dark:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;" tabindex="0" data-language="bash"><code><span class="line">docker run --rm -it \</span>
+<span class="line">  --name ican-sim \</span>
+<span class="line">  --network host --ipc=host \</span>
+<span class="line">  --device /dev/dri \</span>
+<span class="line">  -e DISPLAY=&quot;$DISPLAY&quot; -e QT_X11_NO_MITSHM=1 \</span>
+<span class="line">  -v /tmp/.X11-unix:/tmp/.X11-unix:rw \</span>
+<span class="line">  -v &quot;$WS_HOST:/home/dev/ws:rw&quot; -w /home/dev/ws \</span>
+<span class="line">  ican-humble:22.04 bash -lc 'source /opt/ros/humble/setup.bash; exec ros2 launch ...'</span></code></pre>
 <p><code>--network host</code> 让容器和宿主共用一个 ROS 图（也埋下了后面的串台坑），
 <code>--ipc=host</code> 共用共享内存（埋下了幽灵发布者的坑），
 <code>--device /dev/dri</code> + X11 socket 是图形界面的通路。</p>
@@ -80,10 +96,28 @@ FastDDS 共享内存、<code>ROS_DOMAIN_ID</code>、<code>--ipc=host</code>、ro
 <h2 id="1-devdri-failed-to-load-driver-nouveau">1. 显卡：给了 <code>/dev/dri</code> 还是慢，还刷 <code>failed to load driver: nouveau</code></h2>
 <h3 id="_1">现象</h3>
 <p>容器日志里刷屏：</p>
-<pre class="astro-code astro-code-themes github-light github-dark" style="background-color:#fff;--shiki-dark-bg:#24292e;color:#24292e;--shiki-dark:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;" tabindex="0" data-language="text"><code><span class="line">[gzserver-1] libGL error: glx: failed to create dri3 screen</span><span class="line">[gzserver-1] libGL error: failed to load driver: nouveau</span><span class="line">[gzclient-5] libGL error: glx: failed to create dri3 screen</span><span class="line">[gzclient-5] libGL error: failed to load driver: nouveau</span></code></pre>
+<pre class="astro-code astro-code-themes github-light github-dark" style="background-color:#fff;--shiki-dark-bg:#24292e;color:#24292e;--shiki-dark:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;" tabindex="0" data-language="text"><code><span class="line">[gzserver-1] libGL error: glx: failed to create dri3 screen</span>
+<span class="line">[gzserver-1] libGL error: failed to load driver: nouveau</span>
+<span class="line">[gzclient-5] libGL error: glx: failed to create dri3 screen</span>
+<span class="line">[gzclient-5] libGL error: failed to load driver: nouveau</span></code></pre>
 <p>Gazebo 窗口能开，但卡到没法看；有时开一会儿 <code>gzclient</code> 直接没了。</p>
 <h3 id="_2">排查</h3>
-<pre class="astro-code astro-code-themes github-light github-dark" style="background-color:#fff;--shiki-dark-bg:#24292e;color:#24292e;--shiki-dark:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;" tabindex="0" data-language="bash"><code><span class="line"># 1) 宿主机上哪块 GPU 对应哪个 render 节点</span><span class="line">ls -l /dev/dri/by-path/</span><span class="line"># pci-0000:00:02.0-render -&gt; ../renderD129     # Intel 核显</span><span class="line"># pci-0000:01:00.0-render -&gt; ../renderD128     # NVIDIA 独显</span><span class="line">​</span><span class="line"># 2) 宿主机用的是哪套驱动</span><span class="line">lsmod | grep -E '^nvidia|^i915|^nouveau'</span><span class="line"># nvidia nvidia_drm nvidia_modeset nvidia_uvm i915   ← 闭源/开放模块，没有 nouveau</span><span class="line">​</span><span class="line"># 3) 容器里设备权限</span><span class="line">docker exec ican-sim ls -l /dev/dri/</span><span class="line"># crw-rw---- 1 root   992 226, 128 renderD128   ← 属组是宿主的 render(992)</span><span class="line"># crw-rw---- 1 root   992 226, 129 renderD129</span><span class="line"># crw-rw---- 1 root video  226,   1 card1       ← card* 属 video(44)</span><span class="line">docker exec ican-sim id</span><span class="line"># uid=1000(dev) gid=127(dev) groups=127(dev)     ← 不在 992/44 组里</span></code></pre>
+<pre class="astro-code astro-code-themes github-light github-dark" style="background-color:#fff;--shiki-dark-bg:#24292e;color:#24292e;--shiki-dark:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;" tabindex="0" data-language="bash"><code><span class="line"># 1) 宿主机上哪块 GPU 对应哪个 render 节点</span>
+<span class="line">ls -l /dev/dri/by-path/</span>
+<span class="line"># pci-0000:00:02.0-render -&gt; ../renderD129     # Intel 核显</span>
+<span class="line"># pci-0000:01:00.0-render -&gt; ../renderD128     # NVIDIA 独显</span>
+<span class="line">​</span>
+<span class="line"># 2) 宿主机用的是哪套驱动</span>
+<span class="line">lsmod | grep -E '^nvidia|^i915|^nouveau'</span>
+<span class="line"># nvidia nvidia_drm nvidia_modeset nvidia_uvm i915   ← 闭源/开放模块，没有 nouveau</span>
+<span class="line">​</span>
+<span class="line"># 3) 容器里设备权限</span>
+<span class="line">docker exec ican-sim ls -l /dev/dri/</span>
+<span class="line"># crw-rw---- 1 root   992 226, 128 renderD128   ← 属组是宿主的 render(992)</span>
+<span class="line"># crw-rw---- 1 root   992 226, 129 renderD129</span>
+<span class="line"># crw-rw---- 1 root video  226,   1 card1       ← card* 属 video(44)</span>
+<span class="line">docker exec ican-sim id</span>
+<span class="line"># uid=1000(dev) gid=127(dev) groups=127(dev)     ← 不在 992/44 组里</span></code></pre>
 <p>两个问题叠在一起：</p>
 <ol>
 <li><strong>权限</strong>：<code>--device /dev/dri</code> 是把宿主设备文件原样映射进容器，属组还是宿主
@@ -97,11 +131,17 @@ FastDDS 共享内存、<code>ROS_DOMAIN_ID</code>、<code>--ipc=host</code>、ro
 </ol>
 <h3 id="_3">走过的弯路</h3>
 <p>试过 <code>MESA_LOADER_DRIVER_OVERRIDE=iris</code>（强制 Intel 驱动），<strong>结果照样失败</strong>：</p>
-<pre class="astro-code astro-code-themes github-light github-dark" style="background-color:#fff;--shiki-dark-bg:#24292e;color:#24292e;--shiki-dark:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;" tabindex="0" data-language="text"><code><span class="line">libGL error: glx: failed to create dri3 screen</span><span class="line">libGL error: failed to load driver: iris</span></code></pre>
+<pre class="astro-code astro-code-themes github-light github-dark" style="background-color:#fff;--shiki-dark-bg:#24292e;color:#24292e;--shiki-dark:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;" tabindex="0" data-language="text"><code><span class="line">libGL error: glx: failed to create dri3 screen</span>
+<span class="line">libGL error: failed to load driver: iris</span></code></pre>
 <p>因为只换了"驱动名"，没换"设备"—— Mesa 还是去开独显那个 render 节点，
 iris 当然驱不动 NVIDIA 的卡。<strong>驱动名和设备必须一起指定。</strong></p>
 <h3 id="_4">修法（实测通过）</h3>
-<pre class="astro-code astro-code-themes github-light github-dark" style="background-color:#fff;--shiki-dark-bg:#24292e;color:#24292e;--shiki-dark:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;" tabindex="0" data-language="bash"><code><span class="line">docker run --rm -it \</span><span class="line">  --device /dev/dri \</span><span class="line">  --group-add &quot;$(getent group render | cut -d: -f3)&quot; \</span><span class="line">  --group-add &quot;$(getent group video  | cut -d: -f3)&quot; \</span><span class="line">  -e DRI_PRIME=pci-0000_00_02_0 \</span><span class="line">  ...</span></code></pre>
+<pre class="astro-code astro-code-themes github-light github-dark" style="background-color:#fff;--shiki-dark-bg:#24292e;color:#24292e;--shiki-dark:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;" tabindex="0" data-language="bash"><code><span class="line">docker run --rm -it \</span>
+<span class="line">  --device /dev/dri \</span>
+<span class="line">  --group-add &quot;$(getent group render | cut -d: -f3)&quot; \</span>
+<span class="line">  --group-add &quot;$(getent group video  | cut -d: -f3)&quot; \</span>
+<span class="line">  -e DRI_PRIME=pci-0000_00_02_0 \</span>
+<span class="line">  ...</span></code></pre>
 <ul>
 <li><code>--group-add</code> 把宿主的 <code>render</code>/<code>video</code> GID 带进容器的附加组 → 权限通了；</li>
 <li><code>DRI_PRIME=pci-0000_00_02_0</code> 把设备指到核显（<code>00:02.0</code>，冒号点号换成下划线）。</li>
@@ -127,7 +167,9 @@ driver: nouveau</code> —— 设备选择不是只看节点编号，所以还�
 不写 <code>--cpus</code> / <code>--cpuset-cpus</code> 就是用满。真正决定仿真快慢的是<strong>单核性能 +
 物理引擎的实时率（RTF）</strong>，而不是核数。</p>
 <p>量 RTF 的办法（Gazebo 自带）：</p>
-<pre class="astro-code astro-code-themes github-light github-dark" style="background-color:#fff;--shiki-dark-bg:#24292e;color:#24292e;--shiki-dark:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;" tabindex="0" data-language="bash"><code><span class="line">docker exec ican-sim gz stats -d 5</span><span class="line"># Factor[0.78] SimTime[109.46] RealTime[294.22] Paused[F]</span><span class="line"># Factor[0.71] ...</span></code></pre>
+<pre class="astro-code astro-code-themes github-light github-dark" style="background-color:#fff;--shiki-dark-bg:#24292e;color:#24292e;--shiki-dark:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;" tabindex="0" data-language="bash"><code><span class="line">docker exec ican-sim gz stats -d 5</span>
+<span class="line"># Factor[0.78] SimTime[109.46] RealTime[294.22] Paused[F]</span>
+<span class="line"># Factor[0.71] ...</span></code></pre>
 <p>实测这套场景 RTF 稳定在 <strong>0.70~0.80</strong>：仿真时间比真实时间慢 20~30%，
 <code>gzserver</code> 常驻 200%+ CPU。也就是说"仿真里 1 秒 ≈ 墙上 1.3 秒"，
 写超时逻辑时如果混用仿真时间和墙钟时间，就会得到莫名其妙的结果。</p>
@@ -143,7 +185,10 @@ driver: nouveau</code> —— 设备选择不是只看节点编号，所以还�
 <pre class="astro-code astro-code-themes github-light github-dark" style="background-color:#fff;--shiki-dark-bg:#24292e;color:#24292e;--shiki-dark:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;" tabindex="0" data-language="bash"><code><span class="line">[[ -d &quot;${WS_HOST}&quot; ]] || { echo &quot;找不到工作空间：${WS_HOST}&quot; &gt;&amp;2; exit 1; }</span></code></pre>
 <h3 id="32">3.2 软链接不会被跟随</h3>
 <p>项目搬家后想用软链接"让旧路径还能用"，实测：</p>
-<pre class="astro-code astro-code-themes github-light github-dark" style="background-color:#fff;--shiki-dark-bg:#24292e;color:#24292e;--shiki-dark:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;" tabindex="0" data-language="bash"><code><span class="line">ln -s /home/cisyam/桌面/ican /tmp/link_test</span><span class="line">docker run --rm -v /tmp/link_test:/ws alpine ls /ws</span><span class="line"># docker: Error response from daemon: error while creating mount source</span><span class="line"># path '/tmp/link_test': mkdir /tmp/link_test: file exists</span></code></pre>
+<pre class="astro-code astro-code-themes github-light github-dark" style="background-color:#fff;--shiki-dark-bg:#24292e;color:#24292e;--shiki-dark:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;" tabindex="0" data-language="bash"><code><span class="line">ln -s /home/cisyam/桌面/ican /tmp/link_test</span>
+<span class="line">docker run --rm -v /tmp/link_test:/ws alpine ls /ws</span>
+<span class="line"># docker: Error response from daemon: error while creating mount source</span>
+<span class="line"># path '/tmp/link_test': mkdir /tmp/link_test: file exists</span></code></pre>
 <p>Docker 不跟随软链接，<strong>挂载源必须是真实路径</strong>。所以别指望用软链接兼容旧路径，
 要么改脚本里的路径，要么让脚本自己定位。</p>
 <blockquote>
@@ -156,7 +201,10 @@ driver: nouveau</code> —— 设备选择不是只看节点编号，所以还�
 <p>早期脚本里写死 <code>WS_HOST=/home/cisyam/ican_shoot</code>，项目一搬到桌面就全线失效，
 更糟的是产生了"两份一模一样的拷贝"，改 A 跑 B，看起来就是"改了代码容器里没变"。</p>
 <p>改成按脚本自身位置定位，一次解决：</p>
-<pre class="astro-code astro-code-themes github-light github-dark" style="background-color:#fff;--shiki-dark-bg:#24292e;color:#24292e;--shiki-dark:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;" tabindex="0" data-language="bash"><code><span class="line">SELF=&quot;$(readlink -f &quot;${BASH_SOURCE[0]}&quot;)&quot;</span><span class="line">WS_HOST=&quot;$(dirname &quot;$(dirname &quot;${SELF}&quot;)&quot;)&quot;      # docker/ 的上一级 = 项目根</span><span class="line">WS_CONT=&quot;/home/dev/ican_shoot&quot;</span><span class="line">docker run ... -v &quot;${WS_HOST}:${WS_CONT}:rw&quot; -w &quot;${WS_CONT}&quot; ...</span></code></pre>
+<pre class="astro-code astro-code-themes github-light github-dark" style="background-color:#fff;--shiki-dark-bg:#24292e;color:#24292e;--shiki-dark:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;" tabindex="0" data-language="bash"><code><span class="line">SELF=&quot;$(readlink -f &quot;${BASH_SOURCE[0]}&quot;)&quot;</span>
+<span class="line">WS_HOST=&quot;$(dirname &quot;$(dirname &quot;${SELF}&quot;)&quot;)&quot;      # docker/ 的上一级 = 项目根</span>
+<span class="line">WS_CONT=&quot;/home/dev/ican_shoot&quot;</span>
+<span class="line">docker run ... -v &quot;${WS_HOST}:${WS_CONT}:rw&quot; -w &quot;${WS_CONT}&quot; ...</span></code></pre>
 <p>"单目录架构"：<strong>工作区就是提交包本身</strong>，容器里编译产物 <code>build/ install/ log/</code>
 直接落在项目里，宿主改代码容器立刻可见，不存在同步问题。</p>
 <p>顺带一提：<strong>挂载源路径里带中文（<code>/home/cisyam/桌面/ican</code>）完全没问题</strong>，
@@ -171,12 +219,33 @@ driver: nouveau</code> —— 设备选择不是只看节点编号，所以还�
 是<strong>从固定点垂直上天</strong>；状态机日志里出现 <code>上一状态 11709.2s</code>、<code>-11680.2s</code>
 这种鬼数字；一趟本该 30 秒的任务跑了 15 分钟。</p>
 <h3 id="_6">排查</h3>
-<pre class="astro-code astro-code-themes github-light github-dark" style="background-color:#fff;--shiki-dark-bg:#24292e;color:#24292e;--shiki-dark:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;" tabindex="0" data-language="bash"><code><span class="line"># 1) 机器人真值位置 vs shooter 查到的位姿</span><span class="line">#    真值 (0.015, -0.006)，shooter 算出来 (-1.188, +0.549, +0.102)，枪口还指向世界 z 轴</span><span class="line">python3 tools/probe_shot.py</span><span class="line">​</span><span class="line"># 2) 看 /tf 到底有几个发布者</span><span class="line">ros2 topic info /tf -v --no-daemon | grep &quot;Node name&quot;</span><span class="line"># robot_state_publisher</span><span class="line"># robot_state_publisher     ← 同一个名字出现两次？进程却只有一个！</span><span class="line"># 3) 按 (父→子) 去重打印整棵 TF 树</span><span class="line">python3 tools/probe_tf_all.py 5</span><span class="line"># odom → base_footprint   ←★ 同一对边出现两种取值</span><span class="line">#   正常值 xyz=(+0.015,-0.006,+0.000) q=(0,0,0,1)</span><span class="line">#   幽灵值 xyz=(-1.131,+0.707,+0.102) q=(-0.41,+0.58,-0.41,-0.58)</span></code></pre>
+<pre class="astro-code astro-code-themes github-light github-dark" style="background-color:#fff;--shiki-dark-bg:#24292e;color:#24292e;--shiki-dark:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;" tabindex="0" data-language="bash"><code><span class="line"># 1) 机器人真值位置 vs shooter 查到的位姿</span>
+<span class="line">#    真值 (0.015, -0.006)，shooter 算出来 (-1.188, +0.549, +0.102)，枪口还指向世界 z 轴</span>
+<span class="line">python3 tools/probe_shot.py</span>
+<span class="line">​</span>
+<span class="line"># 2) 看 /tf 到底有几个发布者</span>
+<span class="line">ros2 topic info /tf -v --no-daemon | grep &quot;Node name&quot;</span>
+<span class="line"># robot_state_publisher</span>
+<span class="line"># robot_state_publisher     ← 同一个名字出现两次？进程却只有一个！</span>
+<span class="line"># 3) 按 (父→子) 去重打印整棵 TF 树</span>
+<span class="line">python3 tools/probe_tf_all.py 5</span>
+<span class="line"># odom → base_footprint   ←★ 同一对边出现两种取值</span>
+<span class="line">#   正常值 xyz=(+0.015,-0.006,+0.000) q=(0,0,0,1)</span>
+<span class="line">#   幽灵值 xyz=(-1.131,+0.707,+0.102) q=(-0.41,+0.58,-0.41,-0.58)</span></code></pre>
 <p>画成图就是这样——同一对父子坐标边，TF buffer 里同时躺着两条互相矛盾的数据。</p>
 <p>正常情况是一棵连通的树：</p>
-<pre class="astro-code astro-code-themes github-light github-dark" style="background-color:#fff;--shiki-dark-bg:#24292e;color:#24292e;--shiki-dark:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;" tabindex="0" data-language="text"><code><span class="line">  odom ──► base_footprint ──► base_link</span><span class="line">                │</span><span class="line">                ├──► laser_cylinder_link ──► laser_link</span><span class="line">                ├──► camera_link</span><span class="line">                └──► wheels...</span></code></pre>
+<pre class="astro-code astro-code-themes github-light github-dark" style="background-color:#fff;--shiki-dark-bg:#24292e;color:#24292e;--shiki-dark:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;" tabindex="0" data-language="text"><code><span class="line">  odom ──► base_footprint ──► base_link</span>
+<span class="line">                │</span>
+<span class="line">                ├──► laser_cylinder_link ──► laser_link</span>
+<span class="line">                ├──► camera_link</span>
+<span class="line">                └──► wheels...</span></code></pre>
 <p>中招之后，<code>odom → base_footprint</code> 这条边上同时挂着两个值：</p>
-<pre class="astro-code astro-code-themes github-light github-dark" style="background-color:#fff;--shiki-dark-bg:#24292e;color:#24292e;--shiki-dark:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;" tabindex="0" data-language="text"><code><span class="line">  odom ──► base_footprint ──► base_link</span><span class="line">                │</span><span class="line">                ├── 正常值 xyz=(+0.015,-0.006, 0)      ◄── 本轮仿真</span><span class="line">                └── 幽灵值 xyz=(-1.131,+0.707,+0.102)  ◄── /dev/shm 里的 FastDDS 残留段</span><span class="line">​</span><span class="line">  shooter 查 TF 时可能命中任意一条；命中幽灵值 → 枪口指向世界 z 轴</span></code></pre>
+<pre class="astro-code astro-code-themes github-light github-dark" style="background-color:#fff;--shiki-dark-bg:#24292e;color:#24292e;--shiki-dark:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;" tabindex="0" data-language="text"><code><span class="line">  odom ──► base_footprint ──► base_link</span>
+<span class="line">                │</span>
+<span class="line">                ├── 正常值 xyz=(+0.015,-0.006, 0)      ◄── 本轮仿真</span>
+<span class="line">                └── 幽灵值 xyz=(-1.131,+0.707,+0.102)  ◄── /dev/shm 里的 FastDDS 残留段</span>
+<span class="line">​</span>
+<span class="line">  shooter 查 TF 时可能命中任意一条；命中幽灵值 → 枪口指向世界 z 轴</span></code></pre>
 <h3 id="_7">根因</h3>
 <p><code>--ipc=host</code> 下容器和宿主共用 <code>/dev/shm</code>。<strong>上一轮仿真进程被杀后，FastDDS
 留在共享内存里的段没有清干净</strong>，新起的节点会把这些残留当成"活数据"读进来：</p>
@@ -186,9 +255,21 @@ driver: nouveau</code> —— 设备选择不是只看节点编号，所以还�
   子弹从固定点垂直发射；</li>
 <li><code>/clock</code> 跟着跳变，任何用仿真时间的超时/计时全部失真。</li>
 </ul>
-<pre class="astro-code astro-code-themes github-light github-dark" style="background-color:#fff;--shiki-dark-bg:#24292e;color:#24292e;--shiki-dark:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;" tabindex="0" data-language="text"><code><span class="line">$ ls -la /dev/shm | head</span><span class="line">fastrtps_14785ad6596e5479   ← 12:04 本轮</span><span class="line">fastrtps_389d0da2a137400c   ← 11:42，那个容器早没了</span><span class="line">fastrtps_74e2db6d08d1a3df   ← 11:51，同上</span><span class="line">...</span></code></pre>
+<pre class="astro-code astro-code-themes github-light github-dark" style="background-color:#fff;--shiki-dark-bg:#24292e;color:#24292e;--shiki-dark:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;" tabindex="0" data-language="text"><code><span class="line">$ ls -la /dev/shm | head</span>
+<span class="line">fastrtps_14785ad6596e5479   ← 12:04 本轮</span>
+<span class="line">fastrtps_389d0da2a137400c   ← 11:42，那个容器早没了</span>
+<span class="line">fastrtps_74e2db6d08d1a3df   ← 11:51，同上</span>
+<span class="line">...</span></code></pre>
 <h3 id="_8">修法：域隔离 + 进容器清共享内存</h3>
-<pre class="astro-code astro-code-themes github-light github-dark" style="background-color:#fff;--shiki-dark-bg:#24292e;color:#24292e;--shiki-dark:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;" tabindex="0" data-language="bash"><code><span class="line"># 1) 给这套仿真一个专用 DDS 域，幽灵留在默认域 0，看不见了</span><span class="line">-e ROS_DOMAIN_ID=42</span><span class="line">​</span><span class="line"># 2) 启动前清掉共享内存残留。注意：这一步要在**容器内**做</span><span class="line">#    宿主侧那条 rm 在某些受限 shell 下会静默失败（被沙箱拦掉）</span><span class="line">docker run ... ican-humble:22.04 bash -lc '</span><span class="line">  rm -f /dev/shm/fastrtps_* /dev/shm/sem.fastrtps_* /dev/shm/fastdds_* 2&gt;/dev/null</span><span class="line">  source scripts/setup_env.sh &amp;&amp; exec bash scripts/run_sim.sh gui:=false</span><span class="line">'</span></code></pre>
+<pre class="astro-code astro-code-themes github-light github-dark" style="background-color:#fff;--shiki-dark-bg:#24292e;color:#24292e;--shiki-dark:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;" tabindex="0" data-language="bash"><code><span class="line"># 1) 给这套仿真一个专用 DDS 域，幽灵留在默认域 0，看不见了</span>
+<span class="line">-e ROS_DOMAIN_ID=42</span>
+<span class="line">​</span>
+<span class="line"># 2) 启动前清掉共享内存残留。注意：这一步要在**容器内**做</span>
+<span class="line">#    宿主侧那条 rm 在某些受限 shell 下会静默失败（被沙箱拦掉）</span>
+<span class="line">docker run ... ican-humble:22.04 bash -lc '</span>
+<span class="line">  rm -f /dev/shm/fastrtps_* /dev/shm/sem.fastrtps_* /dev/shm/fastdds_* 2&gt;/dev/null</span>
+<span class="line">  source scripts/setup_env.sh &amp;&amp; exec bash scripts/run_sim.sh gui:=false</span>
+<span class="line">'</span></code></pre>
 <p>改完这个，同样的任务从"四项射击全 0、跑 15 分钟"变成"<strong>满分、30 秒</strong>"。</p>
 <blockquote>
 <p>经验：只要用了 <code>--ipc=host</code> + DDS，<strong>每次启动前清 <code>/dev/shm/fastrtps_*</code>，
@@ -198,24 +279,30 @@ driver: nouveau</code> —— 设备选择不是只看节点编号，所以还�
 <h2 id="5-ros2-clidaemon-no-daemon">5. 容器里的 <code>ros2</code> CLI：daemon 会坏，加 <code>--no-daemon</code></h2>
 <h3 id="_9">现象</h3>
 <p>启动脚本里"等服务就绪"的循环永远等不到，最后打印"服务不存在"放弃 —— 但服务明明在。</p>
-<pre class="astro-code astro-code-themes github-light github-dark" style="background-color:#fff;--shiki-dark-bg:#24292e;color:#24292e;--shiki-dark:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;" tabindex="0" data-language="text"><code><span class="line">$ ros2 service list          # 空！</span><span class="line">$ ros2 param get /shooter bullet_speed</span><span class="line">xmlrpc.client.Fault: &lt;Fault 1: &quot;&lt;class 'RuntimeError'&gt;:!rclpy.ok()&quot;&gt;</span></code></pre>
+<pre class="astro-code astro-code-themes github-light github-dark" style="background-color:#fff;--shiki-dark-bg:#24292e;color:#24292e;--shiki-dark:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;" tabindex="0" data-language="text"><code><span class="line">$ ros2 service list          # 空！</span>
+<span class="line">$ ros2 param get /shooter bullet_speed</span>
+<span class="line">xmlrpc.client.Fault: &lt;Fault 1: &quot;&lt;class 'RuntimeError'&gt;:!rclpy.ok()&quot;&gt;</span></code></pre>
 <h3 id="_10">根因</h3>
 <p><code>ros2</code> CLI 默认走一个后台 daemon 做发现，这个 daemon 在容器里很容易进入坏状态
 （<code>!rclpy.ok()</code>）。坏掉之后 <code>ros2 service list</code> <strong>不报错、直接返回空</strong>，
 脚本据此判断"服务没起来"，于是白等 30 秒后放弃 —— 表现就是"仿真起不来/参数没生效"。</p>
 <h3 id="_11">修法</h3>
-<pre class="astro-code astro-code-themes github-light github-dark" style="background-color:#fff;--shiki-dark-bg:#24292e;color:#24292e;--shiki-dark:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;" tabindex="0" data-language="bash"><code><span class="line">ros2nd() { ros2 &quot;$@&quot; --no-daemon; }     # 所有 CLI 调用都绕过 daemon</span><span class="line">ros2nd service list | grep -q '/shooter/shoot'</span></code></pre>
+<pre class="astro-code astro-code-themes github-light github-dark" style="background-color:#fff;--shiki-dark-bg:#24292e;color:#24292e;--shiki-dark:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;" tabindex="0" data-language="bash"><code><span class="line">ros2nd() { ros2 &quot;$@&quot; --no-daemon; }     # 所有 CLI 调用都绕过 daemon</span>
+<span class="line">ros2nd service list | grep -q '/shooter/shoot'</span></code></pre>
 <hr />
 <h2 id="6-set-o-pipefail-grep-q">6. <code>set -o pipefail</code> + <code>grep -q</code> = 假失败</h2>
 <h3 id="_12">现象</h3>
 <p>仿真日志里明明白白有 <code>Shooter services ready</code>，脚本却打印"仿真启动失败"。</p>
 <h3 id="_13">根因</h3>
-<pre class="astro-code astro-code-themes github-light github-dark" style="background-color:#fff;--shiki-dark-bg:#24292e;color:#24292e;--shiki-dark:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;" tabindex="0" data-language="bash"><code><span class="line">set -Eeuo pipefail</span><span class="line">docker logs ican-sim 2&gt;&amp;1 | grep -q 'Shooter services ready' &amp;&amp; echo ok</span><span class="line"># → 判失败</span></code></pre>
+<pre class="astro-code astro-code-themes github-light github-dark" style="background-color:#fff;--shiki-dark-bg:#24292e;color:#24292e;--shiki-dark:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;" tabindex="0" data-language="bash"><code><span class="line">set -Eeuo pipefail</span>
+<span class="line">docker logs ican-sim 2&gt;&amp;1 | grep -q 'Shooter services ready' &amp;&amp; echo ok</span>
+<span class="line"># → 判失败</span></code></pre>
 <p><code>grep -q</code> 一匹配到就退出并关闭管道，上游 <code>docker logs</code> 收到 SIGPIPE 返回 <strong>141</strong>，
 <code>pipefail</code> 会把整条管道的退出码判为失败。日志越大越必现
 （我们的日志被 TF 警告刷到两万多行）。</p>
 <h3 id="_14">修法：别用管道判内容，捕获后做字符串比对</h3>
-<pre class="astro-code astro-code-themes github-light github-dark" style="background-color:#fff;--shiki-dark-bg:#24292e;color:#24292e;--shiki-dark:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;" tabindex="0" data-language="bash"><code><span class="line">sim_log_has() { [[ &quot;$(docker logs ican-sim 2&gt;&amp;1 || true)&quot; == *&quot;$1&quot;* ]]; }</span><span class="line">sim_log_has 'Shooter services ready' || { echo &quot;启动失败&quot;; exit 1; }</span></code></pre>
+<pre class="astro-code astro-code-themes github-light github-dark" style="background-color:#fff;--shiki-dark-bg:#24292e;color:#24292e;--shiki-dark:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;" tabindex="0" data-language="bash"><code><span class="line">sim_log_has() { [[ &quot;$(docker logs ican-sim 2&gt;&amp;1 || true)&quot; == *&quot;$1&quot;* ]]; }</span>
+<span class="line">sim_log_has 'Shooter services ready' || { echo &quot;启动失败&quot;; exit 1; }</span></code></pre>
 <hr />
 <h2 id="7">7. 排查速查表</h2>
 <table>
