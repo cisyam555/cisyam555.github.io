@@ -1,0 +1,115 @@
+<!DOCTYPE html><html lang="zh-CN"> <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>YOLOv8 和 OpenCV 的区别与联系：从原理到应用的图文详解 | 樱落小站</title><meta name="description" content="用四张原创示意图讲清 OpenCV 与 YOLOv8 的定位、识别原理、协作流程与选型方法，理解工具库和深度学习模型如何配合。"><link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🌸</text></svg>"><!-- 主题初始化：在页面渲染前读取偏好，避免暗色模式闪烁 --><script>
+    (() => {
+      const saved = localStorage.getItem('theme');
+      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      if (saved === 'dark' || (!saved && prefersDark)) {
+        document.documentElement.classList.add('dark');
+      }
+    })();
+  </script><link rel="stylesheet" href="/_astro/_page_.CDZEDPZI.css"><link rel="canonical" href="https://cisyam555.github.io/posts/yolov8-opencv-differences-and-connections/"></head> <body> <!-- 花瓣飘落粒子动画：全屏 canvas，固定在页面最底层 --><canvas id="petals-canvas" aria-hidden="true"></canvas> <script type="module">(()=>{const i=document.getElementById("petals-canvas"),t=i.getContext("2d");let s=i.width=window.innerWidth,a=i.height=window.innerHeight;const h=window.innerWidth<640?18:36,o=Array.from({length:h},()=>r(!0));function r(e=!1){return{x:Math.random()*s,y:e?Math.random()*a:-20,size:7+Math.random()*9,speedY:.6+Math.random()*1.1,speedX:.3+Math.random()*.7,angle:Math.random()*Math.PI*2,spin:(Math.random()-.5)*.03,opacity:.55+Math.random()*.35,hue:335+Math.random()*20}}function l(e){t.save(),t.translate(e.x,e.y),t.rotate(e.angle);const c=document.documentElement.classList.contains("dark")?72:78;t.fillStyle=`hsla(${e.hue}, 85%, ${c}%, ${e.opacity})`,t.beginPath(),t.moveTo(0,0),t.bezierCurveTo(e.size*.5,-e.size*.9,e.size*1.1,-e.size*.5,e.size*.2,e.size*.2),t.bezierCurveTo(e.size*.9,e.size*.5,e.size*.4,e.size*1,0,0),t.fill(),t.restore()}function d(){t.clearRect(0,0,s,a);for(let e=0;e<o.length;e++){const n=o[e];n.y+=n.speedY,n.x+=Math.sin(n.angle)*n.speedX,n.angle+=n.spin,l(n),n.y>a+30&&(o[e]=r())}requestAnimationFrame(d)}window.addEventListener("resize",()=>{s=i.width=window.innerWidth,a=i.height=window.innerHeight}),d()})();</script> <nav class="fixed top-0 left-0 right-0 z-50"> <div class="glass mx-auto mt-3 flex max-w-6xl items-center justify-between rounded-2xl px-5 py-2.5" style="margin-left: max(0.75rem, calc(50% - 36rem)); margin-right: max(0.75rem, calc(50% - 36rem));"> <a href="/" class="flex items-center gap-2 text-lg font-bold whitespace-nowrap"> <span>🌸</span> <span class="bg-gradient-to-r from-sakura-500 to-sora-400 bg-clip-text text-transparent"> 樱落小站 </span> </a> <div class="hidden items-center gap-1 md:flex"> <a href="/" class="rounded-full px-4 py-1.5 text-sm font-medium transition-all duration-200 text-ink-500 hover:bg-sakura-100 hover:text-sakura-600 dark:text-ink-300 dark:hover:bg-yoru-600 dark:hover:text-sakura-300"> 主页 </a><a href="/archive" class="rounded-full px-4 py-1.5 text-sm font-medium transition-all duration-200 text-ink-500 hover:bg-sakura-100 hover:text-sakura-600 dark:text-ink-300 dark:hover:bg-yoru-600 dark:hover:text-sakura-300"> 归档 </a><a href="/links" class="rounded-full px-4 py-1.5 text-sm font-medium transition-all duration-200 text-ink-500 hover:bg-sakura-100 hover:text-sakura-600 dark:text-ink-300 dark:hover:bg-yoru-600 dark:hover:text-sakura-300"> 链接 </a><a href="/about" class="rounded-full px-4 py-1.5 text-sm font-medium transition-all duration-200 text-ink-500 hover:bg-sakura-100 hover:text-sakura-600 dark:text-ink-300 dark:hover:bg-yoru-600 dark:hover:text-sakura-300"> 关于 </a> </div> <div class="flex items-center gap-2"> <button id="search-btn" class="flex h-9 w-9 items-center justify-center rounded-full text-ink-500 transition hover:bg-sakura-100 hover:text-sakura-600 dark:text-ink-300 dark:hover:bg-yoru-600" aria-label="搜索" title="搜索 (Ctrl+K)"> <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><path d="m21 21-4.3-4.3"></path></svg> </button> <button id="theme-toggle" class="flex h-9 w-9 items-center justify-center rounded-full text-ink-500 transition hover:bg-sakura-100 hover:text-sakura-600 dark:text-ink-300 dark:hover:bg-yoru-600 dark:hover:text-sakura-300" aria-label="切换主题" title="切换亮/暗主题"> <!-- 月亮（亮色模式下显示，点击切暗色） --> <svg class="dark:hidden" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"></path></svg> <!-- 太阳（暗色模式下显示，点击切亮色） --> <svg class="hidden dark:block" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"></path></svg> </button> <script type="module">document.getElementById("theme-toggle")?.addEventListener("click",()=>{const t=document.documentElement;t.classList.toggle("dark"),localStorage.setItem("theme",t.classList.contains("dark")?"dark":"light")});</script> <button id="mobile-menu-btn" class="flex h-9 w-9 items-center justify-center rounded-full text-ink-500 transition hover:bg-sakura-100 dark:text-ink-300 dark:hover:bg-yoru-600 md:hidden" aria-label="菜单"> <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="4" x2="20" y1="6" y2="6"></line><line x1="4" x2="20" y1="12" y2="12"></line><line x1="4" x2="20" y1="18" y2="18"></line></svg> </button> </div> </div> <!-- 移动端下拉菜单 --> <div id="mobile-menu" class="glass mx-3 mt-2 hidden rounded-2xl p-2 md:hidden"> <a href="/" class="block rounded-xl px-4 py-2.5 text-sm font-medium text-ink-500 transition hover:bg-sakura-100 hover:text-sakura-600 dark:text-ink-300 dark:hover:bg-yoru-600"> 主页 </a><a href="/archive" class="block rounded-xl px-4 py-2.5 text-sm font-medium text-ink-500 transition hover:bg-sakura-100 hover:text-sakura-600 dark:text-ink-300 dark:hover:bg-yoru-600"> 归档 </a><a href="/links" class="block rounded-xl px-4 py-2.5 text-sm font-medium text-ink-500 transition hover:bg-sakura-100 hover:text-sakura-600 dark:text-ink-300 dark:hover:bg-yoru-600"> 链接 </a><a href="/about" class="block rounded-xl px-4 py-2.5 text-sm font-medium text-ink-500 transition hover:bg-sakura-100 hover:text-sakura-600 dark:text-ink-300 dark:hover:bg-yoru-600"> 关于 </a> </div> </nav> <!-- 搜索弹窗 --> <div id="search-modal" class="fixed inset-0 z-[60] hidden items-start justify-center bg-black/30 p-4 pt-24 backdrop-blur-sm"> <div class="glass w-full max-w-xl rounded-2xl p-4"> <div class="flex items-center gap-2 border-b border-sakura-200/60 pb-3 dark:border-yoru-600"> <span class="text-ink-300">🔍</span> <input id="search-input" type="text" placeholder="搜索文章标题、标签…" class="w-full bg-transparent text-sm outline-none placeholder:text-ink-300"> <kbd class="rounded-md bg-sakura-100 px-2 py-0.5 text-xs text-ink-500 dark:bg-yoru-600 dark:text-ink-300">ESC</kbd> </div> <div id="search-results" class="mt-2 max-h-80 overflow-y-auto"></div> </div> </div> <script type="module">const y=document.getElementById("mobile-menu-btn"),f=document.getElementById("mobile-menu");y?.addEventListener("click",()=>f?.classList.toggle("hidden"));const n=document.getElementById("search-modal"),d=document.getElementById("search-input"),c=document.getElementById("search-results"),a=document.getElementById("search-data");let i=[];if(a)try{i=JSON.parse(a.textContent||"[]")}catch{}function l(){n.classList.remove("hidden"),n.classList.add("flex"),setTimeout(()=>d.focus(),50),m("")}function r(){n.classList.add("hidden"),n.classList.remove("flex")}function m(e){const s=e.trim().toLowerCase(),o=i.filter(t=>!s||t.title.toLowerCase().includes(s)||t.tags.some(u=>u.toLowerCase().includes(s)));if(!i.length){c.innerHTML='<p class="py-6 text-center text-sm text-ink-300">还没有文章哦～</p>';return}c.innerHTML=o.length?o.map(t=>`<a href="${t.href}" class="block rounded-xl px-3 py-2.5 transition hover:bg-sakura-100 dark:hover:bg-yoru-600">
+              <div class="text-sm font-medium">${t.title}</div>
+              <div class="mt-0.5 text-xs text-ink-300">${t.date} · ${t.tags.join(" / ")}</div>
+            </a>`).join(""):'<p class="py-6 text-center text-sm text-ink-300">没有找到匹配的文章 🌸</p>'}document.getElementById("search-btn")?.addEventListener("click",l);n.addEventListener("click",e=>{e.target===n&&r()});document.addEventListener("keydown",e=>{(e.ctrlKey||e.metaKey)&&e.key==="k"&&(e.preventDefault(),l()),e.key==="Escape"&&r()});d?.addEventListener("input",()=>m(d.value));</script>  <div class="mx-auto max-w-3xl px-4 md:px-6" style="padding-top: 7rem;"> <a href="/" class="mb-6 inline-block text-sm text-ink-500 transition hover:text-sakura-500 dark:text-ink-300">
+← 返回首页
+</a> <article class="glass rounded-3xl p-7 md:p-10"> <header class="border-b border-sakura-200/60 pb-6 dark:border-yoru-600"> <div class="mb-3 flex flex-wrap items-center gap-2 text-xs text-ink-500 dark:text-ink-300"> <span class="rounded-full bg-mint-200/70 px-2.5 py-0.5 font-medium text-mint-600 dark:bg-yoru-600 dark:text-mint-400"> 技术 </span> <span>📅 2026年10月17日</span>  </div> <h1 class="text-2xl font-extrabold leading-snug md:text-3xl">YOLOv8 和 OpenCV 的区别与联系：从原理到应用的图文详解</h1> <div class="mt-4 flex flex-wrap gap-2"><span class="tag-pill"># YOLOv8</span><span class="tag-pill"># OpenCV</span><span class="tag-pill"># 计算机视觉</span><span class="tag-pill"># 目标检测</span><span class="tag-pill"># 学习笔记</span></div> </header> <div class="prose-blog mt-8"><p>在学习计算机视觉时，很多人都会遇到两个名字：OpenCV 和 YOLOv8。它们都能处理图像，也经常一起出现在摄像头检测项目中，但它们并不是同一种工具。</p>
+<p><strong>OpenCV 是计算机视觉工具库，YOLOv8 是深度学习视觉模型系列。</strong> 前者提供处理图像、视频和几何信息的工具，后者通过训练得到的模型完成目标检测等任务。</p>
+<h2 id="_1">一、先看定位：工具库和模型有什么不同？</h2>
+<p><a aria-label="查看原图：OpenCV 与 YOLOv8 的定位对比" href="/posts/yolov8-opencv-differences-and-connections/figure-01.png"><img alt="OpenCV 与 YOLOv8 的定位对比" decoding="async" height="900" src="/posts/yolov8-opencv-differences-and-connections/figure-01.png" style="display:block;width:100%;height:auto;border-radius:16px;" width="1600"/></a></p>
+<h3 id="opencv">OpenCV：视觉处理的工具箱</h3>
+<p>OpenCV 的全称是 Open Source Computer Vision Library，即开源计算机视觉库。它提供图像读写、视频采集、颜色转换、滤波、边缘检测、轮廓分析、相机标定等功能。</p>
+<p>例如，将手机拍摄的歪斜文档校正为正视图，主要涉及边界提取和透视变换；测量固定工位上零件的尺寸，则可能涉及相机标定、边缘定位和尺度换算。这些都是 OpenCV 擅长参与的任务。</p>
+<p>OpenCV 不只包含传统视觉算法，也提供 DNN 模块，可以加载兼容的深度学习模型进行推理。因此，把它理解为“只能做简单图像处理”并不准确。</p>
+<h3 id="yolov8">YOLOv8：学习得到的视觉模型</h3>
+<p>YOLOv8 由 Ultralytics 推出，以目标检测应用最为常见，也提供实例分割、图像分类、姿态估计等任务的模型。</p>
+<p>以目标检测为例，它主要回答两个问题：<strong>画面里有什么？目标在哪里？</strong> 输出通常包含类别、边界框和置信度。</p>
+<p>假如模型在街道图片中检测到一辆汽车，就会给出汽车的类别和矩形位置。置信度是模型对这次检测的评分，不应直接等同于经过校准的正确概率。</p>
+<p>不同任务需要选择相应的模型或权重。普通检测权重不会自动同时输出人体关键点和实例分割掩码。</p>
+<h2 id="_2">二、再看原理：写规则与学习特征</h2>
+<p><a aria-label="查看原图：OpenCV 规则方案与 YOLOv8 学习方案的示意对比" href="/posts/yolov8-opencv-differences-and-connections/figure-02.png"><img alt="OpenCV 规则方案与 YOLOv8 学习方案的示意对比" decoding="async" height="900" loading="lazy" src="/posts/yolov8-opencv-differences-and-connections/figure-02.png" style="display:block;width:100%;height:auto;border-radius:16px;" width="1600"/></a></p>
+<p><em>图中的框选用于解释方法，并非实际模型推理结果。</em></p>
+<p>假设我们要从画面中寻找小球，可以采用两种思路。</p>
+<h3 id="opencv_1">使用 OpenCV：明确写出判断条件</h3>
+<p>开发者可以先提取红色区域，再根据面积、圆度等条件筛选候选轮廓。程序实际上是在执行“颜色接近红色，而且形状接近圆形”等规则。</p>
+<p>在背景简单、光照稳定的环境中，这种方案可能快速有效，也不需要收集训练数据。但当光照改变、目标被遮挡，或者背景出现相似物体时，规则可能需要重新调整。</p>
+<h3 id="yolov8_1">使用 YOLOv8：从标注样本中学习</h3>
+<p>采用 YOLOv8 时，通常需要准备图片，标注小球的位置与类别，再训练模型。训练过程会调整模型参数，使预测逐渐接近标注结果。</p>
+<p>如果数据涵盖不同颜色、角度、光照和遮挡情况，模型更有机会适应这些变化。不过，效果仍取决于数据质量、标注和训练配置。</p>
+<p>图中假设训练数据包含红、蓝两种球，所以学习方案示意框出了两种颜色的球。这不表示模型天然认识所有球，也不表示它永远不会误检。</p>
+<p><strong>这里比较的是两种具体方案。OpenCV 也能调用学习型模型，规则方法也可以与深度学习结合。</strong></p>
+<h2 id="_3">三、核心区别对照</h2>
+<div style="overflow-x:auto;"><table>
+<thead>
+<tr>
+<th>对比维度</th>
+<th>OpenCV</th>
+<th>YOLOv8</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>本质</td>
+<td>计算机视觉工具库</td>
+<td>深度学习视觉模型系列</td>
+</tr>
+<tr>
+<td>常见任务</td>
+<td>图像处理、视频处理、几何计算</td>
+<td>检测、分割、分类、姿态估计</td>
+</tr>
+<tr>
+<td>能力来源</td>
+<td>所选择的算法和模型</td>
+<td>训练数据与学习得到的参数</td>
+</tr>
+<tr>
+<td>是否需要训练</td>
+<td>取决于方法，基础处理通常不需要</td>
+<td>预训练权重可直接推理，自定义任务通常需要训练</td>
+</tr>
+<tr>
+<td>常见输出</td>
+<td>图像、边缘、轮廓、特征点、几何参数</td>
+<td>类别、检测框、掩码、关键点</td>
+</tr>
+</tbody>
+</table></div>
+<p>一个关键区别是：<strong>轮廓信息不等于类别信息。</strong> 找到一个矩形轮廓，并不能仅凭这一点知道它是手机、书本还是屏幕。</p>
+<p>反过来，检测出“零件”也不代表已经得到精密尺寸。识别、定位和测量是相关但不同的任务。</p>
+<h2 id="_4">四、两者如何联系起来？</h2>
+<p><a aria-label="查看原图：OpenCV 与 YOLOv8 在摄像头项目中的协作流程" href="/posts/yolov8-opencv-differences-and-connections/figure-03.png"><img alt="OpenCV 与 YOLOv8 在摄像头项目中的协作流程" decoding="async" height="900" loading="lazy" src="/posts/yolov8-opencv-differences-and-connections/figure-03.png" style="display:block;width:100%;height:auto;border-radius:16px;" width="1600"/></a></p>
+<p>以车辆分析系统为例，OpenCV 可以打开摄像头并读取画面，YOLOv8 对每一帧执行检测，业务程序根据结果进行跟踪或计数，最后再显示或保存处理后的画面。</p>
+<p>OpenCV 读取的图像通常以 NumPy 数组表示，Ultralytics 的预测接口可以直接接收这种输入，所以两者衔接比较方便。</p>
+<p>得到检测框后，开发者可以使用 OpenCV 绘制矩形、文字和计数线。Ultralytics 也提供绘图接口，不必每次都手动画框。</p>
+<h3 id="_5">检测数量不等于累计数量</h3>
+<p>假设一辆车在镜头中停留了 100 帧，模型可能在每一帧都检测到它。如果把各帧检测数量直接累加，同一辆车就可能被重复统计。</p>
+<p>因此，“当前画面有几辆车”可以通过检测结果统计；“一小时内经过多少辆车”通常还需要多目标跟踪、过线判断和重复计数处理。ByteTrack、BoT-SORT 等跟踪方法可以参与这一过程。</p>
+<h3 id="_6">部署时也可以结合</h3>
+<p>YOLOv8 可以导出为 ONNX 等格式，在确认版本与算子兼容后，通过 OpenCV DNN 执行推理。这种方案需要正确处理输入缩放、颜色顺序、归一化、输出解析及必要的后处理。</p>
+<p>这不意味着 OpenCV 能直接加载任意 YOLOv8 <code>.pt</code> 权重，而是说明二者可以出现在同一条部署链路中。</p>
+<h2 id="_7">五、实际项目怎么选？</h2>
+<p><a aria-label="查看原图：根据应用场景选择 OpenCV、YOLOv8 或组合方案" href="/posts/yolov8-opencv-differences-and-connections/figure-04.png"><img alt="根据应用场景选择 OpenCV、YOLOv8 或组合方案" decoding="async" height="900" loading="lazy" src="/posts/yolov8-opencv-differences-and-connections/figure-04.png" style="display:block;width:100%;height:auto;border-radius:16px;" width="1600"/></a></p>
+<h3 id="opencv_2">颜色、边缘和几何规律明确：先评估 OpenCV</h3>
+<p>文档校正、相机标定、固定光照下的颜色分拣，都可以优先考虑明确的图像处理或几何方法。这些问题未必需要目标检测模型。</p>
+<h3 id="yolov8_2">复杂场景中识别物体：考虑 YOLOv8</h3>
+<p>行人检测、车辆检测、产品定位等任务，需要从复杂画面中提取类别与位置，适合评估 YOLOv8 这类模型。</p>
+<p>但常见通用预训练权重只支持其训练类别。安全帽、特定零件或特殊缺陷等目标，可能需要专用权重或自行训练。模型能识别什么，主要取决于任务、训练数据和权重。</p>
+<h3 id="_8">识别后还要测量或统计：组合使用</h3>
+<p>例如，工业检测可以先用 YOLOv8 定位零件，再用 OpenCV 对局部区域进行边缘提取、几何分析和尺寸计算。车辆统计则可以结合检测、跟踪、过线逻辑和视频显示。</p>
+<p>另外，YOLOv8 的矩形检测框通常不应直接作为精密测量边界：模型定位误差、镜头畸变和拍摄透视都会影响结果。</p>
+<h2 id="_9">六、关于速度和准确率的常见误解</h2>
+<p><strong>不能笼统地说 YOLOv8 比 OpenCV 更准确。</strong> OpenCV 是工具库，需要明确其中使用了什么算法，再在同一任务和数据上比较。</p>
+<p><strong>也不能简单地说 OpenCV 一定更快。</strong> 简单阈值处理通常计算量较小，但复杂视觉流程也可能很耗时。YOLOv8 的速度受模型大小、输入分辨率、CPU/GPU 和推理后端等因素影响。</p>
+<p>测试时，应区分模型推理耗时和完整流程耗时。摄像头读取、图像传输、绘图与视频保存，都可能影响最终帧率。</p>
+<p>判断识别效果则应关注精确率、召回率、mAP 等指标，并检查实际场景中的误检与漏检。只看演示图片上的高置信度框，不足以判断系统是否可靠。</p>
+<h2 id="_10">结语</h2>
+<p>OpenCV 提供处理图像、视频和几何信息的工具，YOLOv8 提供通过训练完成视觉任务的模型。开发项目时，先拆解采集、识别、测量、跟踪和统计等环节，再选择各自适合的方法，就能理解两者为什么经常一起使用。</p>
+<h3 id="_11">延伸阅读</h3>
+<ul>
+<li><a href="https://docs.opencv.org/4.x/">OpenCV 官方文档</a></li>
+<li><a href="https://docs.ultralytics.com/models/yolov8/">Ultralytics YOLOv8 文档</a></li>
+</ul>
+<p>文中四张图片均为原创教学示意图，不代表性能测试或实际检测结果。</p></div> </article> </div>  <footer class="mt-16 pb-10 text-center"> <div class="mx-auto max-w-6xl px-6"> <div class="glass rounded-3xl px-6 py-8"> <p class="text-sm text-ink-500 dark:text-ink-300">
+🌸 樱落小站 · 用 <span class="text-sakura-500">❤</span> 与 Astro 构建
+</p> <p class="mt-2 text-xs text-ink-300">
+© 2026 cisyam555 · 欢迎常来看看呀～
+</p> </div> </div> </footer> <!-- 全站搜索数据 --> <script type="application/json" id="search-data">[{"title": "YOLOv8 和 OpenCV 的区别与联系：从原理到应用的图文详解", "tags": ["YOLOv8", "OpenCV", "计算机视觉", "目标检测", "学习笔记"], "date": "2026/10/17", "href": "/posts/yolov8-opencv-differences-and-connections/"}, {"title": "YOLOv8 目标检测实战：从环境搭建到模型训练", "tags": ["YOLOv8", "目标检测", "PyTorch", "深度学习", "学习笔记"], "date": "2026/10/10", "href": "/posts/yolov8-object-detection-training/"}, {"title": "在 Ubuntu 24.04 用 Docker 运行 Humble + Gazebo Classic：显卡、挂载、DDS 串台踩坑全记录", "tags": ["Docker", "ROS 2", "Gazebo", "踩坑"], "date": "2026/10/2", "href": "/posts/docker-ros2-humble-2404-pitfalls/"}, {"title": "大模型“捡数据”，机器人“造数据”：具身智能的数据困局", "tags": ["具身智能", "数据", "ROS 2", "机器人"], "date": "2026/9/24", "href": "/posts/embodied-data-bottleneck/"}, {"title": "ROS 2 话题通信的 2 个静默陷阱：我写系统状态可视化工具时踩过的坑", "tags": ["ROS 2", "话题通信", "静默失败", "踩坑"], "date": "2026/9/19", "href": "/posts/ros2-topic-silent-failures/"}, {"title": "Python 学习笔记：装饰器与上下文管理器", "tags": ["Python", "装饰器", "上下文管理器", "学习笔记"], "date": "2026/9/9", "href": "/posts/python-decorator-context-manager/"}]</script> </body> </html>
