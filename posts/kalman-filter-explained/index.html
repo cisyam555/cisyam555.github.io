@@ -22,7 +22,13 @@
 .prose-blog .kf-toc ol{columns:2;column-gap:2rem;margin-bottom:0}
 .prose-blog .kf-toc a{font-size:.88em}
 .prose-blog h2[id]{scroll-margin-top:6rem}
-.prose-blog .kf-table-wrap{overflow-x:auto}
+.prose-blog .kf-table-wrap{overflow-x:auto;margin:1.5rem 0;max-width:100%;--kf-table-border:#d7cad5;--kf-table-heading:#f4eaf1;--kf-table-stripe:rgba(175,133,160,.045)}
+.dark .prose-blog .kf-table-wrap{--kf-table-border:#59516b;--kf-table-heading:#352f45;--kf-table-stripe:rgba(200,177,215,.055)}
+.prose-blog .kf-table-wrap table{width:100%;min-width:420px;table-layout:fixed;border-collapse:collapse;border:1px solid var(--kf-table-border);margin:0;font-size:.95em;line-height:1.8}
+.prose-blog .kf-table-wrap th,.prose-blog .kf-table-wrap td{border:1px solid var(--kf-table-border);padding:.8rem 1rem;text-align:left;vertical-align:top;white-space:normal;overflow-wrap:anywhere}
+.prose-blog .kf-table-wrap th{background:var(--kf-table-heading);font-weight:700}
+.prose-blog .kf-table-wrap th:first-child{width:28%}
+.prose-blog .kf-table-wrap tbody tr:nth-child(even){background:var(--kf-table-stripe)}
 #kalman-fusion{--foreground:#314456;--border:#bdcad6;--viz-series-1:#137eab;--viz-series-2:#6c69b1;--viz-series-3:#c88628;margin:1.5rem 0;padding:1rem;border:1px solid rgba(89,145,187,.25);border-radius:12px}
 .dark #kalman-fusion{--foreground:#e1dfec;--border:#565370;--viz-series-1:#70c7e4;--viz-series-2:#b5a4e9;--viz-series-3:#efbc6c}
 #kalman-fusion h3{margin-top:0}
