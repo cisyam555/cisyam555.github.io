@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="zh-CN"> <head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0" name="viewport"/><title>卡尔曼滤波到底是什么？从一辆小车开始讲明白 | 樱落小站</title><meta content="从机器人小车定位出发，用流程图、可调权重示意图和仿真曲线，通俗讲清卡尔曼滤波的预测、修正、公式推导与实际应用。" name="description"/><link href="data:image/svg+xml,&lt;svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'&gt;&lt;text y='.9em' font-size='90'&gt;🌸&lt;/text&gt;&lt;/svg&gt;" rel="icon"/><!-- 主题初始化：在页面渲染前读取偏好，避免暗色模式闪烁 --><script>
+    (() => {
+      const saved = localStorage.getItem('theme');
+      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      if (saved === 'dark' || (!saved && prefersDark)) {
+        document.documentElement.classList.add('dark');
+      }
+    })();
+  </script><link href="/_astro/_page_.CDZEDPZI.css" rel="stylesheet"/><link href="https://cisyam555.github.io/posts/kalman-filter-explained/" rel="canonical"/><meta content="卡尔曼滤波到底是什么？从一辆小车开始讲明白" property="og:title"/><meta content="从机器人小车定位出发，用流程图、可调权重示意图和仿真曲线，通俗讲清卡尔曼滤波的预测、修正、公式推导与实际应用。" property="og:description"/><meta content="article" property="og:type"/><meta content="https://cisyam555.github.io/posts/kalman-filter-explained/" property="og:url"/><meta content="2026-10-20T12:00:00+08:00" property="article:published_time"/><style>
+.prose-blog{overflow-wrap:anywhere}
+.prose-blog .kf-equation{margin:1.5rem 0;padding:1rem 1.2rem;background:rgba(89,145,187,.09);border-left:3px solid #558bad;border-radius:0 10px 10px 0;font-family:inherit;font-size:1.05em;line-height:1.9;overflow-wrap:anywhere}
+.prose-blog .kf-flow{margin:2rem 0;text-align:center}
+.prose-blog .kf-node{padding:1rem;background:rgba(89,145,187,.09);border:1px solid rgba(89,145,187,.22);border-radius:12px;line-height:1.8}
+.prose-blog .kf-measure{background:rgba(216,155,69,.10);border-color:rgba(216,155,69,.28)}
+.prose-blog .kf-arrow{margin:.25rem;font-size:1.4rem;opacity:.65}
+.prose-blog .kf-pair{display:grid;grid-template-columns:1fr 1fr;gap:1rem}
+.prose-blog .kf-strip{margin:1.5rem 0;line-height:2;color:inherit}
+.prose-blog figure img{display:block;width:100%;height:auto;border-radius:12px}
+.prose-blog figcaption{margin-top:.8rem;line-height:1.7;text-align:center;font-size:.85em;opacity:.8}
+.prose-blog .kf-toc{padding:1rem 1.2rem;background:rgba(175,133,160,.07);border-radius:12px;margin-bottom:2rem}
+.prose-blog .kf-toc ol{columns:2;column-gap:2rem;margin-bottom:0}
+.prose-blog .kf-toc a{font-size:.88em}
+.prose-blog h2[id]{scroll-margin-top:6rem}
+.prose-blog .kf-table-wrap{overflow-x:auto}
+#kalman-fusion{--foreground:#314456;--border:#bdcad6;--viz-series-1:#137eab;--viz-series-2:#6c69b1;--viz-series-3:#c88628;margin:1.5rem 0;padding:1rem;border:1px solid rgba(89,145,187,.25);border-radius:12px}
+.dark #kalman-fusion{--foreground:#e1dfec;--border:#565370;--viz-series-1:#70c7e4;--viz-series-2:#b5a4e9;--viz-series-3:#efbc6c}
+#kalman-fusion h3{margin-top:0}
+#kalman-fusion .viz-controls{display:grid;grid-template-columns:1fr 1fr;gap:1rem}
+#kalman-fusion label{display:block;font-size:.9em;line-height:1.8}
+#kalman-fusion input{display:block;width:100%;accent-color:#598bac;margin-top:.5rem;min-height:32px}
+#kalman-fusion [data-result]{font-size:.85em;line-height:1.8}
+@media(max-width:520px){.prose-blog .kf-pair,#kalman-fusion .viz-controls{grid-template-columns:1fr}.prose-blog .kf-toc ol{columns:1}}
+</style></head> <body> <!-- 花瓣飘落粒子动画：全屏 canvas，固定在页面最底层 --><canvas aria-hidden="true" id="petals-canvas"></canvas> <script type="module">(()=>{const i=document.getElementById("petals-canvas"),t=i.getContext("2d");let s=i.width=window.innerWidth,a=i.height=window.innerHeight;const h=window.innerWidth<640?18:36,o=Array.from({length:h},()=>r(!0));function r(e=!1){return{x:Math.random()*s,y:e?Math.random()*a:-20,size:7+Math.random()*9,speedY:.6+Math.random()*1.1,speedX:.3+Math.random()*.7,angle:Math.random()*Math.PI*2,spin:(Math.random()-.5)*.03,opacity:.55+Math.random()*.35,hue:335+Math.random()*20}}function l(e){t.save(),t.translate(e.x,e.y),t.rotate(e.angle);const c=document.documentElement.classList.contains("dark")?72:78;t.fillStyle=`hsla(${e.hue}, 85%, ${c}%, ${e.opacity})`,t.beginPath(),t.moveTo(0,0),t.bezierCurveTo(e.size*.5,-e.size*.9,e.size*1.1,-e.size*.5,e.size*.2,e.size*.2),t.bezierCurveTo(e.size*.9,e.size*.5,e.size*.4,e.size*1,0,0),t.fill(),t.restore()}function d(){t.clearRect(0,0,s,a);for(let e=0;e<o.length;e++){const n=o[e];n.y+=n.speedY,n.x+=Math.sin(n.angle)*n.speedX,n.angle+=n.spin,l(n),n.y>a+30&&(o[e]=r())}requestAnimationFrame(d)}window.addEventListener("resize",()=>{s=i.width=window.innerWidth,a=i.height=window.innerHeight}),d()})();</script> <nav class="fixed top-0 left-0 right-0 z-50"> <div class="glass mx-auto mt-3 flex max-w-6xl items-center justify-between rounded-2xl px-5 py-2.5" style="margin-left: max(0.75rem, calc(50% - 36rem)); margin-right: max(0.75rem, calc(50% - 36rem));"> <a class="flex items-center gap-2 text-lg font-bold whitespace-nowrap" href="/"> <span>🌸</span> <span class="bg-gradient-to-r from-sakura-500 to-sora-400 bg-clip-text text-transparent"> 樱落小站 </span> </a> <div class="hidden items-center gap-1 md:flex"> <a class="rounded-full px-4 py-1.5 text-sm font-medium transition-all duration-200 text-ink-500 hover:bg-sakura-100 hover:text-sakura-600 dark:text-ink-300 dark:hover:bg-yoru-600 dark:hover:text-sakura-300" href="/"> 主页 </a><a class="rounded-full px-4 py-1.5 text-sm font-medium transition-all duration-200 text-ink-500 hover:bg-sakura-100 hover:text-sakura-600 dark:text-ink-300 dark:hover:bg-yoru-600 dark:hover:text-sakura-300" href="/archive"> 归档 </a><a class="rounded-full px-4 py-1.5 text-sm font-medium transition-all duration-200 text-ink-500 hover:bg-sakura-100 hover:text-sakura-600 dark:text-ink-300 dark:hover:bg-yoru-600 dark:hover:text-sakura-300" href="/links"> 链接 </a><a class="rounded-full px-4 py-1.5 text-sm font-medium transition-all duration-200 text-ink-500 hover:bg-sakura-100 hover:text-sakura-600 dark:text-ink-300 dark:hover:bg-yoru-600 dark:hover:text-sakura-300" href="/about"> 关于 </a> </div> <div class="flex items-center gap-2"> <button aria-label="搜索" class="flex h-9 w-9 items-center justify-center rounded-full text-ink-500 transition hover:bg-sakura-100 hover:text-sakura-600 dark:text-ink-300 dark:hover:bg-yoru-600" id="search-btn" title="搜索 (Ctrl+K)"> <svg fill="none" height="18" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewbox="0 0 24 24" width="18" xmlns="http://www.w3.org/2000/svg"><circle cx="11" cy="11" r="8"></circle><path d="m21 21-4.3-4.3"></path></svg> </button> <button aria-label="切换主题" class="flex h-9 w-9 items-center justify-center rounded-full text-ink-500 transition hover:bg-sakura-100 hover:text-sakura-600 dark:text-ink-300 dark:hover:bg-yoru-600 dark:hover:text-sakura-300" id="theme-toggle" title="切换亮/暗主题"> <!-- 月亮（亮色模式下显示，点击切暗色） --> <svg class="dark:hidden" fill="none" height="18" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewbox="0 0 24 24" width="18" xmlns="http://www.w3.org/2000/svg"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"></path></svg> <!-- 太阳（暗色模式下显示，点击切亮色） --> <svg class="hidden dark:block" fill="none" height="18" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewbox="0 0 24 24" width="18" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"></path></svg> </button> <script type="module">document.getElementById("theme-toggle")?.addEventListener("click",()=>{const t=document.documentElement;t.classList.toggle("dark"),localStorage.setItem("theme",t.classList.contains("dark")?"dark":"light")});</script> <button aria-label="菜单" class="flex h-9 w-9 items-center justify-center rounded-full text-ink-500 transition hover:bg-sakura-100 dark:text-ink-300 dark:hover:bg-yoru-600 md:hidden" id="mobile-menu-btn"> <svg fill="none" height="20" stroke="currentColor" stroke-linecap="round" stroke-width="2" viewbox="0 0 24 24" width="20" xmlns="http://www.w3.org/2000/svg"><line x1="4" x2="20" y1="6" y2="6"></line><line x1="4" x2="20" y1="12" y2="12"></line><line x1="4" x2="20" y1="18" y2="18"></line></svg> </button> </div> </div> <!-- 移动端下拉菜单 --> <div class="glass mx-3 mt-2 hidden rounded-2xl p-2 md:hidden" id="mobile-menu"> <a class="block rounded-xl px-4 py-2.5 text-sm font-medium text-ink-500 transition hover:bg-sakura-100 hover:text-sakura-600 dark:text-ink-300 dark:hover:bg-yoru-600" href="/"> 主页 </a><a class="block rounded-xl px-4 py-2.5 text-sm font-medium text-ink-500 transition hover:bg-sakura-100 hover:text-sakura-600 dark:text-ink-300 dark:hover:bg-yoru-600" href="/archive"> 归档 </a><a class="block rounded-xl px-4 py-2.5 text-sm font-medium text-ink-500 transition hover:bg-sakura-100 hover:text-sakura-600 dark:text-ink-300 dark:hover:bg-yoru-600" href="/links"> 链接 </a><a class="block rounded-xl px-4 py-2.5 text-sm font-medium text-ink-500 transition hover:bg-sakura-100 hover:text-sakura-600 dark:text-ink-300 dark:hover:bg-yoru-600" href="/about"> 关于 </a> </div> </nav> <!-- 搜索弹窗 --> <div class="fixed inset-0 z-[60] hidden items-start justify-center bg-black/30 p-4 pt-24 backdrop-blur-sm" id="search-modal"> <div class="glass w-full max-w-xl rounded-2xl p-4"> <div class="flex items-center gap-2 border-b border-sakura-200/60 pb-3 dark:border-yoru-600"> <span class="text-ink-300">🔍</span> <input class="w-full bg-transparent text-sm outline-none placeholder:text-ink-300" id="search-input" placeholder="搜索文章标题、标签…" type="text"/> <kbd class="rounded-md bg-sakura-100 px-2 py-0.5 text-xs text-ink-500 dark:bg-yoru-600 dark:text-ink-300">ESC</kbd> </div> <div class="mt-2 max-h-80 overflow-y-auto" id="search-results"></div> </div> </div> <script type="module">const y=document.getElementById("mobile-menu-btn"),f=document.getElementById("mobile-menu");y?.addEventListener("click",()=>f?.classList.toggle("hidden"));const n=document.getElementById("search-modal"),d=document.getElementById("search-input"),c=document.getElementById("search-results"),a=document.getElementById("search-data");let i=[];if(a)try{i=JSON.parse(a.textContent||"[]")}catch{}function l(){n.classList.remove("hidden"),n.classList.add("flex"),setTimeout(()=>d.focus(),50),m("")}function r(){n.classList.add("hidden"),n.classList.remove("flex")}function m(e){const s=e.trim().toLowerCase(),o=i.filter(t=>!s||t.title.toLowerCase().includes(s)||t.tags.some(u=>u.toLowerCase().includes(s)));if(!i.length){c.innerHTML='<p class="py-6 text-center text-sm text-ink-300">还没有文章哦～</p>';return}c.innerHTML=o.length?o.map(t=>`<a href="${t.href}" class="block rounded-xl px-3 py-2.5 transition hover:bg-sakura-100 dark:hover:bg-yoru-600">
+              <div class="text-sm font-medium">${t.title}</div>
+              <div class="mt-0.5 text-xs text-ink-300">${t.date} · ${t.tags.join(" / ")}</div>
+            </a>`).join(""):'<p class="py-6 text-center text-sm text-ink-300">没有找到匹配的文章 🌸</p>'}document.getElementById("search-btn")?.addEventListener("click",l);n.addEventListener("click",e=>{e.target===n&&r()});document.addEventListener("keydown",e=>{(e.ctrlKey||e.metaKey)&&e.key==="k"&&(e.preventDefault(),l()),e.key==="Escape"&&r()});d?.addEventListener("input",()=>m(d.value));</script> <div class="mx-auto max-w-3xl px-4 md:px-6" style="padding-top: 7rem;"> <a class="mb-6 inline-block text-sm text-ink-500 transition hover:text-sakura-500 dark:text-ink-300" href="/">
+← 返回首页
+</a> <article class="glass rounded-3xl p-7 md:p-10"> <header class="border-b border-sakura-200/60 pb-6 dark:border-yoru-600"> <div class="mb-3 flex flex-wrap items-center gap-2 text-xs text-ink-500 dark:text-ink-300"> <span class="rounded-full bg-mint-200/70 px-2.5 py-0.5 font-medium text-mint-600 dark:bg-yoru-600 dark:text-mint-400"> 技术 </span> <time datetime="2026-10-20">📅 2026年10月20日</time> </div> <h1 class="text-2xl font-extrabold leading-snug md:text-3xl">卡尔曼滤波到底是什么？从一辆小车开始讲明白</h1> <div class="mt-4 flex flex-wrap gap-2"><span class="tag-pill"># 卡尔曼滤波</span><span class="tag-pill"># 机器人</span><span class="tag-pill"># 状态估计</span><span class="tag-pill"># 传感器融合</span><span class="tag-pill"># 学习笔记</span></div> </header> <div class="prose-blog mt-8"><nav aria-label="文章目录" class="kf-toc"><strong>阅读路线</strong><ol><li><a href="#section-1">一、机器人遇到的第一个难题：谁都不完全靠谱</a></li><li><a href="#section-2">二、先不看公式：它就像一个会权衡的判断者</a></li><li><a href="#section-3">三、卡尔曼滤波的工作流程，其实只有两步</a></li><li><a href="#section-4">四、最核心的公式，可以直接读成一句人话</a></li><li><a href="#section-5">五、关键来了：权重是怎么算出来的？</a></li><li><a href="#section-6">六、这个公式不是拍脑袋想出来的</a></li><li><a href="#section-7">七、为什么下一次的权重还可能变化？</a></li><li><a href="#section-8">八、连续运行起来，会是什么效果？</a></li><li><a href="#section-9">九、它与“取平均”有什么区别？</a></li><li><a href="#section-10">十、为什么它在机器人里这么常见？</a></li><li><a href="#section-11">十一、最后避开三个常见误解</a></li></ol></nav><p>想象一下，你正在给一辆机器人小车做定位。</p>
+<p>小车的轮子转了几圈，里程计告诉你：“按我的计算，我们现在应该在 <strong>10 米处</strong>。”与此同时，GPS 告诉你：“我测到的位置是 <strong>12 米</strong>。”</p>
+<p>问题来了：<strong>小车到底在哪儿？</strong></p>
+<p>相信里程计？轮子可能打滑。相信 GPS？卫星信号可能漂移。取平均，算成 11 米？可以，但如果 GPS 明显比里程计准确，为什么还要各信一半？</p>
+<p>卡尔曼滤波，就是用来解决这类问题的。</p>
+<blockquote>
+<p><strong>它根据运动规律预测状态，再用新的测量修正预测；哪一边更可靠，就给哪一边更大的权重。</strong></p>
+</blockquote>
+<p>这里的“状态”，可以是位置、速度、朝向，也可以是电池剩余电量等无法直接准确获取的量。</p>
+<h2 id="section-1">一、机器人遇到的第一个难题：谁都不完全靠谱</h2>
+<p>我们平时容易觉得：装上一个传感器，读取它的数值，就知道真实情况了。但传感器给出的，其实是<strong>带误差的观测</strong>。</p>
+<p>一辆匀速前进的小车，GPS 的读数却可能一会儿偏前，一会儿偏后，有时还会突然“跳”一下。如果机器人完全按照这些读数行动，它可能会误以为自己突然加速、后退，甚至瞬间移动。</p>
+<p>那干脆不看传感器，只靠计算呢？也不行。</p>
+<p>“速度 × 时间”算出来的位置，依赖于速度准确、运动规律正确。遇到轮子打滑、地面颠簸或突然加速，预测也会偏离实际。</p>
+<p>所以，机器人面对的是两种不确定：</p>
+<div class="kf-table-wrap"><table>
+<thead>
+<tr>
+<th>信息来源</th>
+<th>能提供什么</th>
+<th>为什么会出错</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>运动模型</td>
+<td>根据过去推算现在</td>
+<td>真实运动不完全符合假设</td>
+</tr>
+<tr>
+<td>传感器测量</td>
+<td>提供当前的外部观测</td>
+<td>噪声、遮挡、漂移等</td>
+</tr>
+</tbody>
+</table></div>
+<p><strong>卡尔曼滤波把这两份不完美的信息结合起来。</strong></p>
+<h2 id="section-2">二、先不看公式：它就像一个会权衡的判断者</h2>
+<p>回到小车的例子：预测位置是 10 米，GPS 测量是 12 米。</p>
+<p>如果预测不太可靠，而 GPS 比较准，合理的结果就应该更靠近 12 米。例如：</p>
+<div class="kf-equation">新估计 = 20% × 10 + 80% × 12 = <strong>11.6 米</strong></div>
+<p>反过来，如果 GPS 信号很差，而小车的运动预测很可靠，结果就应该更靠近 10 米。</p>
+<p>这里真正重要的问题是：<strong>“谁更可靠”，怎么用数字表示？</strong></p>
+<p>卡尔曼滤波用<strong>误差方差</strong>表示不确定程度。你可以先把它理解成：误差通常有多分散。</p>
+<ul>
+<li>方差小：估计通常比较集中，可靠程度高。</li>
+<li>方差大：估计可能偏得更远，可靠程度低。</li>
+</ul>
+<p>注意：方差是对误差的统计描述，不是说“这一次一定错了多少”。</p>
+<h2 id="section-3">三、卡尔曼滤波的工作流程，其实只有两步</h2>
+<p><strong>第一步：预测。</strong> 根据上一次的估计和运动规律，推算现在的状态。例如：上一秒在 8 米处，速度约为 2 米/秒，那么现在预测在 10 米处。</p>
+<p><strong>第二步：修正。</strong> 收到传感器的新测量后，比较它与预测的差距，再修正预测。例如：GPS 测到 12 米，比预测多了 2 米。根据 GPS 的可靠程度，决定向它靠近多少。</p>
+<figure aria-label="卡尔曼滤波预测与修正循环" class="kf-flow">
+<div class="kf-node">上一次的估计<br/><strong>位置 8 米，速度 2 米/秒</strong></div>
+<div aria-hidden="true" class="kf-arrow">↓</div>
+<div class="kf-node">① 预测：过了 1 秒<br/><strong>预测位置 10 米，同时计算预测误差</strong></div>
+<div aria-hidden="true" class="kf-arrow">↓</div>
+<div class="kf-node kf-measure">新观测进入：GPS 测到 <strong>12 米</strong><br/>同时考虑 GPS 测量误差</div>
+<div aria-hidden="true" class="kf-arrow">↓</div>
+<div class="kf-node">② 修正：按可靠程度加权<br/><strong>新估计 11.6 米，同时更新估计误差</strong></div>
+<div aria-hidden="true" class="kf-arrow">↓</div>
+<div class="kf-node">进入下一秒<br/><strong>以这次估计为起点，再预测、再修正</strong></div>
+<figcaption>图 1：预测 → 新测量 → 修正 → 下一次预测。</figcaption>
+</figure>
+<p>这个过程会持续重复。每一次更新，既得到一个新的状态估计，也得到“对这个估计有多大把握”。</p>
+<h2 id="section-4">四、最核心的公式，可以直接读成一句人话</h2>
+<div class="kf-equation"><strong>新估计 = 预测值 + K ×（测量值 − 预测值）</strong></div>
+<p>逐项翻译：</p>
+<div class="kf-table-wrap"><table>
+<thead>
+<tr>
+<th>公式里的量</th>
+<th>通俗理解</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>预测值</td>
+<td>我原本认为现在应该是多少</td>
+</tr>
+<tr>
+<td>测量值 − 预测值</td>
+<td>新观测与我的预期差了多少</td>
+</tr>
+<tr>
+<td>K</td>
+<td>这次应该接受多少修正</td>
+</tr>
+<tr>
+<td>新估计</td>
+<td>综合判断后的结果</td>
+</tr>
+</tbody>
+</table></div>
+<p>其中，K 叫<strong>卡尔曼增益</strong>。对于这里的一维直接测量问题，可以把它理解成“测量的权重”：</p>
+<ul>
+<li>K = 0.1：只接受差距的 10%，主要相信预测。</li>
+<li>K = 0.5：接受差距的一半。</li>
+<li>K = 0.9：接受差距的 90%，主要相信测量。</li>
+</ul>
+<p>例如 K = 0.8：</p>
+<div class="kf-equation">新估计 = 10 + 0.8 × (12 − 10) = <strong>11.6 米</strong></div>
+<p><strong>它不是直接用测量覆盖预测，而是根据测量的可靠程度，调整预测。</strong></p>
+<h2 id="section-5">五、关键来了：权重是怎么算出来的？</h2>
+<p>在最简单的一维情况下：</p>
+<div class="kf-equation"><strong>K = P / (P + R)</strong></div>
+<ul>
+<li>P：<strong>本次预测</strong>的误差方差。</li>
+<li>R：传感器测量的误差方差。</li>
+</ul>
+<p>假设 P = 4 米²，R = 1 米²。预测误差较大，测量误差较小，所以：</p>
+<div class="kf-equation">K = 4 / (4 + 1) = <strong>0.8</strong></div>
+<p>也就是说，测量占 80%，预测占 20%。你可以调整下面的两种误差，观察融合位置怎样变化：</p>
+<div id="kalman-fusion">
+<h3>预测与测量，应该更信谁？</h3>
+<div class="viz-controls">
+<label class="form-label">预测误差方差 P：<span data-p="">4</span> m²
+      <input aria-label="预测误差方差" class="form-range" data-p-input="" max="16" min="1" step="1" type="range" value="4"/>
+</label>
+<label class="form-label">测量误差方差 R：<span data-r="">1</span> m²
+      <input aria-label="测量误差方差" class="form-range" data-r-input="" max="16" min="1" step="1" type="range" value="1"/>
+</label>
+</div>
+<div aria-label="一维位置融合示意图" data-plot="" role="img"></div>
+<div aria-live="polite" class="text-small" data-result=""></div>
+</div>
+<style>
+  #kalman-fusion [data-plot] {width:100%;}
+  #kalman-fusion svg {display:block;width:100%;}
+  #kalman-fusion svg text {fill:var(--foreground);font-size:12px;}
+</style>
+<script>
+(() => {
+  const root = document.getElementById('kalman-fusion');
+  const plot = root.querySelector('[data-plot]');
+  const pi = root.querySelector('[data-p-input]');
+  const ri = root.querySelector('[data-r-input]');
+  function restore(s) {
+    const v=s?.modelContent;
+    if(v && Number.isFinite(v.P) && Number.isFinite(v.R)) {
+      pi.value=Math.max(1,Math.min(16,v.P)); ri.value=Math.max(1,Math.min(16,v.R));
+    }
+  }
+  function draw() {
+    const p=+pi.value,r=+ri.value,k=p/(p+r),est=10+k*2;
+    root.querySelector('[data-p]').textContent=p;
+    root.querySelector('[data-r]').textContent=r;
+    const width=Math.max(280,plot.clientWidth),left=32,right=width-32;
+    const x=v=>left+(v-6)/10*(right-left);
+    const rows=[['预测',10,42,'var(--viz-series-2)','square'],['测量',12,108,'var(--viz-series-3)','circle'],['融合',est,174,'var(--viz-series-1)','diamond']];
+    let svg='<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 '+width+' 248" role="img"><title>预测10米，测量12米，根据方差加权融合</title>';
+    rows.forEach(([name,val,y,color,shape])=>{
+      svg+='<text x="'+left+'" y="'+(y-16)+'">'+name+'：'+val.toFixed(2)+' m</text><line x1="'+left+'" x2="'+right+'" y1="'+y+'" y2="'+y+'" stroke="var(--border)"/>';
+      const a=x(val);
+      if(shape==='square') svg+='<rect x="'+(a-5)+'" y="'+(y-5)+'" width="10" height="10" fill="'+color+'"/>';
+      else if(shape==='circle') svg+='<circle cx="'+a+'" cy="'+y+'" r="5" fill="'+color+'"/>';
+      else svg+='<path d="M '+a+' '+(y-7)+' l 7 7 -7 7 -7 -7 Z" fill="'+color+'"/>';
+    });
+    [6,10,14,16].forEach(v=>{svg+='<text x="'+x(v)+'" y="215" text-anchor="middle">'+v+'</text>';});
+    svg+='<text class="axis-title" data-axis="x" x="'+(width/2)+'" y="240" text-anchor="middle">位置（m）</text></svg>';
+    plot.innerHTML=svg;
+    root.querySelector('[data-result]').textContent='测量权重 '+(k*100).toFixed(0)+'% · 预测权重 '+((1-k)*100).toFixed(0)+'% · 融合误差方差 '+(p*r/(p+r)).toFixed(2)+' m²';
+  }
+  function change() {
+    draw();
+  }
+  pi.addEventListener('input',change);ri.addEventListener('input',change);
+  new ResizeObserver(draw).observe(plot);
+  draw();
+})();
+</script>
+<p>为什么分子是预测误差 P？因为 <strong>K 表示测量权重</strong>。自己的预测越不准，就越应该接受测量的修正。</p>
+<h2 id="section-6">六、这个公式不是拍脑袋想出来的</h2>
+<p>它来自一个明确的数学目标：<strong>让融合结果的平均平方误差尽可能小。</strong></p>
+<p>下面只推导最简单的版本，不需要矩阵。把预测值记为 a，测量值记为 z，我们想求一个加权结果：</p>
+<div class="kf-equation">x̂ = (1 − K)a + Kz</div>
+<p>假设预测和测量的误差均值为零、互不相关，误差方差分别为 P、R，那么融合误差的方差就是：</p>
+<div class="kf-equation">V(K) = (1 − K)²P + K²R</div>
+<p>这里的平方来自方差的性质：<strong>一个误差乘以权重，其方差就乘以权重的平方。</strong></p>
+<p>为了找到最小值，对 K 求导：</p>
+<div class="kf-equation">dV/dK = −2(1 − K)P + 2KR</div>
+<p>令导数等于零，整理得到：</p>
+<div class="kf-equation">K(P + R) = P<br/><strong>K = P / (P + R)</strong></div>
+<p>这就解释了：<strong>“更相信可靠的信息”这个直觉，如何变成一个可以计算的权重。</strong></p>
+<p>如果再采用高斯分布描述误差，同样的结果也可以从贝叶斯更新推出来：把“看到测量之前的判断”与“新观测提供的信息”结合，得到更新后的判断。</p>
+<h2 id="section-7">七、为什么下一次的权重还可能变化？</h2>
+<p>因为不确定性也会随时间变化。这里要认识第三个量：<strong>过程噪声 Q</strong>。</p>
+<p>它描述的是：从上一时刻推到这一时刻，运动模型又引入了多少不确定性。例如，你假设小车匀速行驶，但实际可能发生轻微加速、打滑。这些无法被简单模型完全解释的变化，就需要通过 Q 来描述。</p>
+<p>对于“位置加上已知位移”的简单模型，预测误差按下面的方式增长：</p>
+<div class="kf-equation">P<sub>预测</sub> = P<sub>上次更新后</sub> + Q</div>
+<p>收到新测量并完成融合后：</p>
+<div class="kf-equation">P<sub>更新后</sub> = (1 − K)P<sub>预测</sub></div>
+<div class="kf-strip">按模型向前推 → 引入不确定性 → 获得测量 → 融合信息 → 继续向前推</div>
+<p>用刚才的例子算一轮：</p>
+<div class="kf-equation">P<sub>更新后</sub> = (1 − 0.8) × 4 = <strong>0.8 米²</strong></div>
+<p>假设下一步的过程噪声 Q = 0.2 米²，那么：</p>
+<div class="kf-equation">P<sub>下一次预测</sub> = 0.8 + 0.2 = <strong>1 米²</strong></div>
+<p>如果 GPS 的测量方差仍为 1 米²，下一次的增益就变成：</p>
+<div class="kf-equation">K = 1 / (1 + 1) = <strong>0.5</strong></div>
+<p><strong>即使传感器没有变，算法对自身预测的把握变了，权重也会改变。</strong> 在某些稳定条件下，增益也可能逐渐趋于固定值。</p>
+<div class="kf-table-wrap"><table>
+<thead>
+<tr>
+<th>符号</th>
+<th>表示什么</th>
+<th>一句话记忆</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>P</td>
+<td>估计误差方差；多维时为协方差矩阵</td>
+<td>我对当前估计有多大把握</td>
+</tr>
+<tr>
+<td>Q</td>
+<td>过程噪声方差；多维时为协方差矩阵</td>
+<td>模型每一步会引入多少不确定性</td>
+</tr>
+<tr>
+<td>R</td>
+<td>测量噪声方差；多维时为协方差矩阵</td>
+<td>传感器通常有多不准</td>
+</tr>
+</tbody>
+</table></div>
+<h2 id="section-8">八、连续运行起来，会是什么效果？</h2>
+<p>下面是一组教学仿真：小车每秒大约前进 1 米，实际运动有轻微扰动，位置传感器的读数也有噪声。</p>
+<figure><a href="kalman-tracking.png"><img alt="小车定位仿真：上图比较真实位置、带噪测量与卡尔曼估计，下图比较测量误差与估计误差" decoding="async" height="1088" loading="lazy" src="kalman-tracking.png" width="1600"/></a><figcaption>图 2：卡尔曼滤波跟踪小车的教学仿真，非实测性能数据。</figcaption></figure>
+<p>上图中，橙色测量点在真实轨迹附近上下波动，蓝色估计线则结合运动规律，持续跟踪小车。下图把误差单独画出来，可以更清楚地看到：这组仿真里，融合后的误差通常比原始测量更小。</p>
+<p>但要注意两点：</p>
+<p><strong>真实位置只在这组仿真中已知。</strong> 实际机器人运行时，算法只能根据模型和传感器做估计。</p>
+<p><strong>看起来平滑，并不等于一定准确。</strong> 一条跟不上真实转弯的平滑轨迹，同样可能是错误结果。</p>
+<h2 id="section-9">九、它与“取平均”有什么区别？</h2>
+<p>普通平均把参与计算的数据一视同仁。移动平均通常把最近几次测量放在一起求平均，可以减少抖动，但在目标运动变化时可能出现滞后。</p>
+<p>卡尔曼滤波还会考虑：</p>
+<ul>
+<li>物体按照什么规律运动。</li>
+<li>当前预测有多不确定。</li>
+<li>新测量有多不确定。</li>
+<li>状态之间有什么联系，例如位置与速度的联系。</li>
+</ul>
+<p>所以，它既能处理噪声，也能利用运动规律跟踪变化。</p>
+<p>它还有一个适合实时系统的特点：<strong>在模型假设成立时，过去的信息可以通过“当前估计和误差协方差”递推传递，不必每次从头处理全部历史数据。</strong></p>
+<h2 id="section-10">十、为什么它在机器人里这么常见？</h2>
+<p>因为机器人的传感器往往各有所长，也各有缺陷。</p>
+<p>例如，惯性测量单元 IMU 响应快，可以感知加速度和角速度；但依靠它积分得到位置，误差会随着时间积累。GPS 能提供绝对位置参考，但可能更新较慢，也可能受遮挡影响。将两者结合，就有机会互相补充。</p>
+<figure aria-label="机器人传感器与状态估计的关系" class="kf-flow">
+<div class="kf-pair"><div class="kf-node">IMU / 轮速计<br/><strong>提供运动变化信息</strong></div><div class="kf-node kf-measure">GPS / 相机 / 激光雷达<br/><strong>提供位置或环境观测</strong></div></div>
+<div aria-hidden="true" class="kf-arrow">↓</div>
+<div class="kf-node">状态预测与测量融合<br/><strong>KF 或其非线性变体</strong></div>
+<div aria-hidden="true" class="kf-arrow">↓</div>
+<div class="kf-node"><strong>位置、速度、姿态估计</strong></div>
+<div aria-hidden="true" class="kf-arrow">↓</div>
+<div class="kf-node"><strong>导航与运动控制</strong></div>
+<figcaption>图 3：传感器提供信息，状态估计算法融合信息，再供导航与控制使用。</figcaption>
+</figure>
+<p>常见应用包括：</p>
+<div class="kf-table-wrap"><table>
+<thead>
+<tr>
+<th>场景</th>
+<th>想估计什么</th>
+<th>有什么作用</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>移动机器人定位</td>
+<td>位置、速度、朝向</td>
+<td>帮助机器人判断自己在哪里</td>
+</tr>
+<tr>
+<td>无人机飞行</td>
+<td>姿态、速度、高度</td>
+<td>为稳定飞行提供状态反馈</td>
+</tr>
+<tr>
+<td>雷达跟踪</td>
+<td>目标位置和速度</td>
+<td>连续跟踪车辆、飞机等目标</td>
+</tr>
+<tr>
+<td>视频目标跟踪</td>
+<td>目标位置、运动趋势</td>
+<td>短暂漏检时继续预测目标位置</td>
+</tr>
+<tr>
+<td>电池管理</td>
+<td>剩余电量等内部状态</td>
+<td>综合电流、电压和电池模型估计电量</td>
+</tr>
+</tbody>
+</table></div>
+<p>实际机器人中的旋转、运动和测量关系经常是非线性的，因此常见的是<strong>扩展卡尔曼滤波 EKF</strong>、<strong>无迹卡尔曼滤波 UKF</strong> 等变体。它们很重要，但机器人也会采用图优化、粒子滤波等方法，具体取决于任务。</p>
+<h2 id="section-11">十一、最后避开三个常见误解</h2>
+<h3>误解一：卡尔曼滤波能自动知道谁更准确</h3>
+<p>它根据你提供的模型、Q、R 等信息计算权重。标准算法不会凭空知道 GPS 是否已经变差，工程上通常还需要噪声标定、质量判断或自适应处理。</p>
+<h3>误解二：传感器越多，结果就一定越好</h3>
+<p>如果不同传感器的误差存在相关性，却被当成独立信息融合，就可能重复计算信息，让系统过度自信。</p>
+<h3>误解三：它能保证每一次都更接近真值</h3>
+<p>它优化的是统计意义上的误差。在线性模型和相应高斯噪声等条件成立时，标准卡尔曼滤波具有最小均方误差意义下的最优性；模型错误、持续偏差和异常测量都会影响效果。</p>
+<p>学到这里，再看最开始的公式：</p>
+<div class="kf-equation"><strong>新估计 = 预测 + 修正权重 ×（观测 − 预测）</strong></div>
+<p>它表达的是一个很实用的判断过程：<strong>先根据已有信息作出预测，再根据新证据调整判断，同时持续记录自己有多不确定。</strong></p></div> </article> </div> <footer class="mt-16 pb-10 text-center"> <div class="mx-auto max-w-6xl px-6"> <div class="glass rounded-3xl px-6 py-8"> <p class="text-sm text-ink-500 dark:text-ink-300">
+🌸 樱落小站 · 用 <span class="text-sakura-500">❤</span> 与 Astro 构建
+</p> <p class="mt-2 text-xs text-ink-300">
+© 2026 cisyam555 · 欢迎常来看看呀～
+</p> </div> </div> </footer> <!-- 全站搜索数据 --> <script id="search-data" type="application/json">[{"title": "卡尔曼滤波到底是什么？从一辆小车开始讲明白", "tags": ["卡尔曼滤波", "机器人", "状态估计", "传感器融合", "学习笔记"], "date": "2026/10/20", "href": "/posts/kalman-filter-explained/"}, {"title": "YOLOv8 和 OpenCV 的区别与联系：从原理到应用的图文详解", "tags": ["YOLOv8", "OpenCV", "计算机视觉", "目标检测", "学习笔记"], "date": "2026/10/17", "href": "/posts/yolov8-opencv-differences-and-connections/"}, {"title": "YOLOv8 目标检测实战：从环境搭建到模型训练", "tags": ["YOLOv8", "目标检测", "PyTorch", "深度学习", "学习笔记"], "date": "2026/10/10", "href": "/posts/yolov8-object-detection-training/"}, {"title": "在 Ubuntu 24.04 用 Docker 运行 Humble + Gazebo Classic：显卡、挂载、DDS 串台踩坑全记录", "tags": ["Docker", "ROS 2", "Gazebo", "踩坑"], "date": "2026/10/2", "href": "/posts/docker-ros2-humble-2404-pitfalls/"}, {"title": "大模型“捡数据”，机器人“造数据”：具身智能的数据困局", "tags": ["具身智能", "数据", "ROS 2", "机器人"], "date": "2026/9/24", "href": "/posts/embodied-data-bottleneck/"}, {"title": "ROS 2 话题通信的 2 个静默陷阱：我写系统状态可视化工具时踩过的坑", "tags": ["ROS 2", "话题通信", "静默失败", "踩坑"], "date": "2026/9/19", "href": "/posts/ros2-topic-silent-failures/"}, {"title": "Python 学习笔记：装饰器与上下文管理器", "tags": ["Python", "装饰器", "上下文管理器", "学习笔记"], "date": "2026/9/9", "href": "/posts/python-decorator-context-manager/"}]</script> </body> </html>
