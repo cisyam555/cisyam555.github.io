@@ -1,17 +1,8 @@
-<!DOCTYPE html><html lang="zh-CN"> <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>在 Ubuntu 24.04 用 Docker 运行 Humble + Gazebo Classic：显卡、挂载、DDS 串台踩坑全记录 | 樱落小站</title><meta name="description" content="主机是 Ubuntu 24.04，比赛要求 22.04 + ROS 2 Humble + Gazebo Classic，用 Docker 套一层最省事。但混合显卡权限、FastDDS 共享内存幽灵、ros2 daemon 坏状态这些“不报错但行为不对”的坑，每个都能让你排查半天。本文记录五个坑的现象、排查命令、根因与修法。"><link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🌸</text></svg>"><!-- 主题初始化：在页面渲染前读取偏好，避免暗色模式闪烁 --><script>
-    (() => {
-      const saved = localStorage.getItem('theme');
-      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-      if (saved === 'dark' || (!saved && prefersDark)) {
-        document.documentElement.classList.add('dark');
-      }
-    })();
-  </script><link rel="stylesheet" href="/_astro/_page_.CDZEDPZI.css"></head> <body> <!-- 花瓣飘落粒子动画：全屏 canvas，固定在页面最底层 --><canvas id="petals-canvas" aria-hidden="true"></canvas> <script type="module">(()=>{const i=document.getElementById("petals-canvas"),t=i.getContext("2d");let s=i.width=window.innerWidth,a=i.height=window.innerHeight;const h=window.innerWidth<640?18:36,o=Array.from({length:h},()=>r(!0));function r(e=!1){return{x:Math.random()*s,y:e?Math.random()*a:-20,size:7+Math.random()*9,speedY:.6+Math.random()*1.1,speedX:.3+Math.random()*.7,angle:Math.random()*Math.PI*2,spin:(Math.random()-.5)*.03,opacity:.55+Math.random()*.35,hue:335+Math.random()*20}}function l(e){t.save(),t.translate(e.x,e.y),t.rotate(e.angle);const c=document.documentElement.classList.contains("dark")?72:78;t.fillStyle=`hsla(${e.hue}, 85%, ${c}%, ${e.opacity})`,t.beginPath(),t.moveTo(0,0),t.bezierCurveTo(e.size*.5,-e.size*.9,e.size*1.1,-e.size*.5,e.size*.2,e.size*.2),t.bezierCurveTo(e.size*.9,e.size*.5,e.size*.4,e.size*1,0,0),t.fill(),t.restore()}function d(){t.clearRect(0,0,s,a);for(let e=0;e<o.length;e++){const n=o[e];n.y+=n.speedY,n.x+=Math.sin(n.angle)*n.speedX,n.angle+=n.spin,l(n),n.y>a+30&&(o[e]=r())}requestAnimationFrame(d)}window.addEventListener("resize",()=>{s=i.width=window.innerWidth,a=i.height=window.innerHeight}),d()})();</script> <nav class="fixed top-0 left-0 right-0 z-50"> <div class="glass mx-auto mt-3 flex max-w-6xl items-center justify-between rounded-2xl px-5 py-2.5" style="margin-left: max(0.75rem, calc(50% - 36rem)); margin-right: max(0.75rem, calc(50% - 36rem));"> <a href="/" class="flex items-center gap-2 text-lg font-bold whitespace-nowrap"> <span>🌸</span> <span class="bg-gradient-to-r from-sakura-500 to-sora-400 bg-clip-text text-transparent"> 樱落小站 </span> </a> <div class="hidden items-center gap-1 md:flex"> <a href="/" class="rounded-full px-4 py-1.5 text-sm font-medium transition-all duration-200 text-ink-500 hover:bg-sakura-100 hover:text-sakura-600 dark:text-ink-300 dark:hover:bg-yoru-600 dark:hover:text-sakura-300"> 主页 </a><a href="/archive" class="rounded-full px-4 py-1.5 text-sm font-medium transition-all duration-200 text-ink-500 hover:bg-sakura-100 hover:text-sakura-600 dark:text-ink-300 dark:hover:bg-yoru-600 dark:hover:text-sakura-300"> 归档 </a><a href="/links" class="rounded-full px-4 py-1.5 text-sm font-medium transition-all duration-200 text-ink-500 hover:bg-sakura-100 hover:text-sakura-600 dark:text-ink-300 dark:hover:bg-yoru-600 dark:hover:text-sakura-300"> 链接 </a><a href="/about" class="rounded-full px-4 py-1.5 text-sm font-medium transition-all duration-200 text-ink-500 hover:bg-sakura-100 hover:text-sakura-600 dark:text-ink-300 dark:hover:bg-yoru-600 dark:hover:text-sakura-300"> 关于 </a> </div> <div class="flex items-center gap-2"> <button id="search-btn" class="flex h-9 w-9 items-center justify-center rounded-full text-ink-500 transition hover:bg-sakura-100 hover:text-sakura-600 dark:text-ink-300 dark:hover:bg-yoru-600" aria-label="搜索" title="搜索 (Ctrl+K)"> <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><path d="m21 21-4.3-4.3"></path></svg> </button> <button id="theme-toggle" class="flex h-9 w-9 items-center justify-center rounded-full text-ink-500 transition hover:bg-sakura-100 hover:text-sakura-600 dark:text-ink-300 dark:hover:bg-yoru-600 dark:hover:text-sakura-300" aria-label="切换主题" title="切换亮/暗主题"> <!-- 月亮（亮色模式下显示，点击切暗色） --> <svg class="dark:hidden" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"></path></svg> <!-- 太阳（暗色模式下显示，点击切亮色） --> <svg class="hidden dark:block" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"></path></svg> </button> <script type="module">document.getElementById("theme-toggle")?.addEventListener("click",()=>{const t=document.documentElement;t.classList.toggle("dark"),localStorage.setItem("theme",t.classList.contains("dark")?"dark":"light")});</script> <button id="mobile-menu-btn" class="flex h-9 w-9 items-center justify-center rounded-full text-ink-500 transition hover:bg-sakura-100 dark:text-ink-300 dark:hover:bg-yoru-600 md:hidden" aria-label="菜单"> <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="4" x2="20" y1="6" y2="6"></line><line x1="4" x2="20" y1="12" y2="12"></line><line x1="4" x2="20" y1="18" y2="18"></line></svg> </button> </div> </div> <!-- 移动端下拉菜单 --> <div id="mobile-menu" class="glass mx-3 mt-2 hidden rounded-2xl p-2 md:hidden"> <a href="/" class="block rounded-xl px-4 py-2.5 text-sm font-medium text-ink-500 transition hover:bg-sakura-100 hover:text-sakura-600 dark:text-ink-300 dark:hover:bg-yoru-600"> 主页 </a><a href="/archive" class="block rounded-xl px-4 py-2.5 text-sm font-medium text-ink-500 transition hover:bg-sakura-100 hover:text-sakura-600 dark:text-ink-300 dark:hover:bg-yoru-600"> 归档 </a><a href="/links" class="block rounded-xl px-4 py-2.5 text-sm font-medium text-ink-500 transition hover:bg-sakura-100 hover:text-sakura-600 dark:text-ink-300 dark:hover:bg-yoru-600"> 链接 </a><a href="/about" class="block rounded-xl px-4 py-2.5 text-sm font-medium text-ink-500 transition hover:bg-sakura-100 hover:text-sakura-600 dark:text-ink-300 dark:hover:bg-yoru-600"> 关于 </a> </div> </nav> <!-- 搜索弹窗 --> <div id="search-modal" class="fixed inset-0 z-[60] hidden items-start justify-center bg-black/30 p-4 pt-24 backdrop-blur-sm"> <div class="glass w-full max-w-xl rounded-2xl p-4"> <div class="flex items-center gap-2 border-b border-sakura-200/60 pb-3 dark:border-yoru-600"> <span class="text-ink-300">🔍</span> <input id="search-input" type="text" placeholder="搜索文章标题、标签…" class="w-full bg-transparent text-sm outline-none placeholder:text-ink-300"> <kbd class="rounded-md bg-sakura-100 px-2 py-0.5 text-xs text-ink-500 dark:bg-yoru-600 dark:text-ink-300">ESC</kbd> </div> <div id="search-results" class="mt-2 max-h-80 overflow-y-auto"></div> </div> </div> <script type="module">const y=document.getElementById("mobile-menu-btn"),f=document.getElementById("mobile-menu");y?.addEventListener("click",()=>f?.classList.toggle("hidden"));const n=document.getElementById("search-modal"),d=document.getElementById("search-input"),c=document.getElementById("search-results"),a=document.getElementById("search-data");let i=[];if(a)try{i=JSON.parse(a.textContent||"[]")}catch{}function l(){n.classList.remove("hidden"),n.classList.add("flex"),setTimeout(()=>d.focus(),50),m("")}function r(){n.classList.add("hidden"),n.classList.remove("flex")}function m(e){const s=e.trim().toLowerCase(),o=i.filter(t=>!s||t.title.toLowerCase().includes(s)||t.tags.some(u=>u.toLowerCase().includes(s)));if(!i.length){c.innerHTML='<p class="py-6 text-center text-sm text-ink-300">还没有文章哦～</p>';return}c.innerHTML=o.length?o.map(t=>`<a href="${t.href}" class="block rounded-xl px-3 py-2.5 transition hover:bg-sakura-100 dark:hover:bg-yoru-600">
-              <div class="text-sm font-medium">${t.title}</div>
-              <div class="mt-0.5 text-xs text-ink-300">${t.date} · ${t.tags.join(" / ")}</div>
-            </a>`).join(""):'<p class="py-6 text-center text-sm text-ink-300">没有找到匹配的文章 🌸</p>'}document.getElementById("search-btn")?.addEventListener("click",l);n.addEventListener("click",e=>{e.target===n&&r()});document.addEventListener("keydown",e=>{(e.ctrlKey||e.metaKey)&&e.key==="k"&&(e.preventDefault(),l()),e.key==="Escape"&&r()});d?.addEventListener("input",()=>m(d.value));</script>  <div class="mx-auto max-w-3xl px-4 md:px-6" style="padding-top: 7rem;"> <a href="/" class="mb-6 inline-block text-sm text-ink-500 transition hover:text-sakura-500 dark:text-ink-300">
+<!DOCTYPE html>
+
+<html lang="zh-CN"> <head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0" name="viewport"/><title>在 Ubuntu 24.04 用 Docker 运行 Humble + Gazebo Classic：显卡、挂载、DDS 串台踩坑全记录 | cisyam · 技术手记</title><meta content="主机是 Ubuntu 24.04，比赛要求 22.04 + ROS 2 Humble + Gazebo Classic，用 Docker 套一层最省事。但混合显卡权限、FastDDS 共享内存幽灵、ros2 daemon 坏状态这些“不报错但行为不对”的坑，每个都能让你排查半天。本文记录五个坑的现象、排查命令、根因与修法。" name="description"/><link href="data:image/svg+xml,&lt;svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'&gt;&lt;text y='.9em' font-size='90'&gt;🌸&lt;/text&gt;&lt;/svg&gt;" rel="icon"/><!-- 主题初始化：在页面渲染前读取偏好，避免暗色模式闪烁 --><script>try{document.documentElement.classList.toggle('dark',localStorage.getItem('theme')==='dark')}catch{}</script><link href="/_astro/_page_.CDZEDPZI.css" rel="stylesheet"/><link href="/assets/journal.css?v=4e2482d400" rel="stylesheet"/><script defer="" src="/assets/journal.js?v=c7bad6c86d"></script><link href="/assets/studio.css?v=5eb8f44405" rel="stylesheet"/></head> <body class="journal-subpage" id="top"><nav aria-label="主导航" class="site-nav"><div class="nav-inner"><a class="brand" href="/"><svg aria-hidden="true" fill="none" viewbox="0 0 32 32"><path d="M11 8L3 16l8 8m10-16 8 8-8 8M19 4l-6 24" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.4"></path></svg><span>cisyam<span class="brand-dot">.</span><small>技术手记 / ENGINEERING JOURNAL</small></span></a><div class="nav-links" id="nav-links"><a href="/">首页</a><a href="/#featured">精选专题</a><a href="/archive/">文章归档</a><a href="/links/">友链</a><a href="/about/">关于我</a></div><div class="nav-actions"><button aria-label="搜索文章" class="search-open" id="search-open"><svg fill="none" height="17" stroke="currentColor" stroke-width="1.6" viewbox="0 0 24 24" width="17"><circle cx="10.5" cy="10.5" r="6.5"></circle><path d="M16 16l5 5"></path></svg><kbd>⌘ K</kbd></button><a class="nav-github" href="https://github.com/cisyam555" rel="noopener noreferrer" target="_blank">GitHub ↗</a><a class="admin-entry" href="http://localhost:4173/admin/" title="本机启动博客服务后，使用 GitHub 登录写作后台">管理后台 ↗</a><button aria-label="切换主题" class="icon-button" id="theme-button">☾</button><button aria-expanded="false" aria-label="展开导航" class="icon-button menu-button" id="menu-button">☰</button></div></div></nav> <!-- 花瓣飘落粒子动画：全屏 canvas，固定在页面最底层 --> <!-- 搜索弹窗 --> <div class="mx-auto max-w-3xl px-4 md:px-6" style="padding-top: 7rem;"> <a class="mb-6 inline-block text-sm text-ink-500 transition hover:text-sakura-500 dark:text-ink-300" href="/">
 ← 返回首页
-</a> <article class="glass rounded-3xl p-7 md:p-10"> <header class="border-b border-sakura-200/60 pb-6 dark:border-yoru-600"> <div class="mb-3 flex flex-wrap items-center gap-2 text-xs text-ink-500 dark:text-ink-300"> <span class="rounded-full bg-mint-200/70 px-2.5 py-0.5 font-medium text-mint-600 dark:bg-yoru-600 dark:text-mint-400"> 技术 </span> <span>📅 2026年10月2日</span>  </div> <h1 class="text-2xl font-extrabold leading-snug md:text-3xl">在 Ubuntu 24.04 用 Docker 运行 Humble + Gazebo Classic：显卡、挂载、DDS 串台踩坑全记录</h1> <div class="mt-4 flex flex-wrap gap-2"><span class="tag-pill"># Docker</span><span class="tag-pill"># ROS 2</span><span class="tag-pill"># Gazebo</span><span class="tag-pill"># 踩坑</span></div> </header> <div class="prose-blog mt-8">
+</a> <article class="glass rounded-3xl p-7 md:p-10"> <header class="border-b border-sakura-200/60 pb-6 dark:border-yoru-600"> <div class="mb-3 flex flex-wrap items-center gap-2 text-xs text-ink-500 dark:text-ink-300"> <span class="rounded-full bg-mint-200/70 px-2.5 py-0.5 font-medium text-mint-600 dark:bg-yoru-600 dark:text-mint-400"> 技术 </span> <span>📅 2026年10月2日</span> </div> <h1 class="text-2xl font-extrabold leading-snug md:text-3xl">在 Ubuntu 24.04 用 Docker 运行 Humble + Gazebo Classic：显卡、挂载、DDS 串台踩坑全记录</h1> <div class="mt-4 flex flex-wrap gap-2"><span class="tag-pill"># Docker</span><span class="tag-pill"># ROS 2</span><span class="tag-pill"># Gazebo</span><span class="tag-pill"># 踩坑</span></div> </header> <div class="prose-blog mt-8">
 <blockquote>
 <p>关键词：ROS 2 Humble、Gazebo Classic、Docker、混合显卡（Intel + NVIDIA）、
 FastDDS 共享内存、<code>ROS_DOMAIN_ID</code>、<code>--ipc=host</code>、ros2 daemon</p>
@@ -21,9 +12,9 @@ FastDDS 共享内存、<code>ROS_DOMAIN_ID</code>、<code>--ipc=host</code>、ro
 根因和修法</strong>都记下来，附实测数据。</p>
 </blockquote>
 <p><strong>懒人版结论</strong>——如果只想抄三行，就抄这三行：</p>
-<pre class="astro-code astro-code-themes github-light github-dark" style="background-color:#fff;--shiki-dark-bg:#24292e;color:#24292e;--shiki-dark:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;" tabindex="0" data-language="bash"><code><span class="line"># 1) 显卡：容器用户要进宿主 render/video 组，并且把设备指到核显</span>
-<span class="line">--group-add &quot;$(getent group render | cut -d: -f3)&quot; \</span>
-<span class="line">--group-add &quot;$(getent group video  | cut -d: -f3)&quot; -e DRI_PRIME=pci-0000_00_02_0</span>
+<pre class="astro-code astro-code-themes github-light github-dark" data-language="bash" style="background-color:#fff;--shiki-dark-bg:#24292e;color:#24292e;--shiki-dark:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;" tabindex="0"><code><span class="line"># 1) 显卡：容器用户要进宿主 render/video 组，并且把设备指到核显</span>
+<span class="line">--group-add "$(getent group render | cut -d: -f3)" \</span>
+<span class="line">--group-add "$(getent group video  | cut -d: -f3)" -e DRI_PRIME=pci-0000_00_02_0</span>
 <span class="line">​</span>
 <span class="line"># 2) 隔离：给每套仿真一个专属 DDS 域，并在容器内清掉共享内存残留</span>
 <span class="line">-e ROS_DOMAIN_ID=42</span>
@@ -31,7 +22,7 @@ FastDDS 共享内存、<code>ROS_DOMAIN_ID</code>、<code>--ipc=host</code>、ro
 <span class="line">​</span>
 <span class="line"># 3) 容器里所有 ros2 CLI 都加 --no-daemon（daemon 会坏）</span>
 <span class="line">ros2 service list --no-daemon</span></code></pre>
-<hr />
+<hr/>
 <h2 id="0">0. 先交代环境</h2>
 <table>
 <thead>
@@ -81,28 +72,28 @@ FastDDS 共享内存、<code>ROS_DOMAIN_ID</code>、<code>--ipc=host</code>、ro
 <p>比赛环境为什么要 22.04：官方仿真包是按 Humble + Gazebo Classic 11 编的，
 而 Gazebo Classic 已经停止维护，24.04 上没有对应版本。套容器是最现实的选择。</p>
 <p>容器骨架大致长这样：</p>
-<pre class="astro-code astro-code-themes github-light github-dark" style="background-color:#fff;--shiki-dark-bg:#24292e;color:#24292e;--shiki-dark:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;" tabindex="0" data-language="bash"><code><span class="line">docker run --rm -it \</span>
+<pre class="astro-code astro-code-themes github-light github-dark" data-language="bash" style="background-color:#fff;--shiki-dark-bg:#24292e;color:#24292e;--shiki-dark:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;" tabindex="0"><code><span class="line">docker run --rm -it \</span>
 <span class="line">  --name ican-sim \</span>
 <span class="line">  --network host --ipc=host \</span>
 <span class="line">  --device /dev/dri \</span>
-<span class="line">  -e DISPLAY=&quot;$DISPLAY&quot; -e QT_X11_NO_MITSHM=1 \</span>
+<span class="line">  -e DISPLAY="$DISPLAY" -e QT_X11_NO_MITSHM=1 \</span>
 <span class="line">  -v /tmp/.X11-unix:/tmp/.X11-unix:rw \</span>
-<span class="line">  -v &quot;$WS_HOST:/home/dev/ws:rw&quot; -w /home/dev/ws \</span>
+<span class="line">  -v "$WS_HOST:/home/dev/ws:rw" -w /home/dev/ws \</span>
 <span class="line">  ican-humble:22.04 bash -lc 'source /opt/ros/humble/setup.bash; exec ros2 launch ...'</span></code></pre>
 <p><code>--network host</code> 让容器和宿主共用一个 ROS 图（也埋下了后面的串台坑），
 <code>--ipc=host</code> 共用共享内存（埋下了幽灵发布者的坑），
 <code>--device /dev/dri</code> + X11 socket 是图形界面的通路。</p>
-<hr />
+<hr/>
 <h2 id="1-devdri-failed-to-load-driver-nouveau">1. 显卡：给了 <code>/dev/dri</code> 还是慢，还刷 <code>failed to load driver: nouveau</code></h2>
 <h3 id="_1">现象</h3>
 <p>容器日志里刷屏：</p>
-<pre class="astro-code astro-code-themes github-light github-dark" style="background-color:#fff;--shiki-dark-bg:#24292e;color:#24292e;--shiki-dark:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;" tabindex="0" data-language="text"><code><span class="line">[gzserver-1] libGL error: glx: failed to create dri3 screen</span>
+<pre class="astro-code astro-code-themes github-light github-dark" data-language="text" style="background-color:#fff;--shiki-dark-bg:#24292e;color:#24292e;--shiki-dark:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;" tabindex="0"><code><span class="line">[gzserver-1] libGL error: glx: failed to create dri3 screen</span>
 <span class="line">[gzserver-1] libGL error: failed to load driver: nouveau</span>
 <span class="line">[gzclient-5] libGL error: glx: failed to create dri3 screen</span>
 <span class="line">[gzclient-5] libGL error: failed to load driver: nouveau</span></code></pre>
 <p>Gazebo 窗口能开，但卡到没法看；有时开一会儿 <code>gzclient</code> 直接没了。</p>
 <h3 id="_2">排查</h3>
-<pre class="astro-code astro-code-themes github-light github-dark" style="background-color:#fff;--shiki-dark-bg:#24292e;color:#24292e;--shiki-dark:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;" tabindex="0" data-language="bash"><code><span class="line"># 1) 宿主机上哪块 GPU 对应哪个 render 节点</span>
+<pre class="astro-code astro-code-themes github-light github-dark" data-language="bash" style="background-color:#fff;--shiki-dark-bg:#24292e;color:#24292e;--shiki-dark:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;" tabindex="0"><code><span class="line"># 1) 宿主机上哪块 GPU 对应哪个 render 节点</span>
 <span class="line">ls -l /dev/dri/by-path/</span>
 <span class="line"># pci-0000:00:02.0-render -&gt; ../renderD129     # Intel 核显</span>
 <span class="line"># pci-0000:01:00.0-render -&gt; ../renderD128     # NVIDIA 独显</span>
@@ -131,15 +122,15 @@ FastDDS 共享内存、<code>ROS_DOMAIN_ID</code>、<code>--ipc=host</code>、ro
 </ol>
 <h3 id="_3">走过的弯路</h3>
 <p>试过 <code>MESA_LOADER_DRIVER_OVERRIDE=iris</code>（强制 Intel 驱动），<strong>结果照样失败</strong>：</p>
-<pre class="astro-code astro-code-themes github-light github-dark" style="background-color:#fff;--shiki-dark-bg:#24292e;color:#24292e;--shiki-dark:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;" tabindex="0" data-language="text"><code><span class="line">libGL error: glx: failed to create dri3 screen</span>
+<pre class="astro-code astro-code-themes github-light github-dark" data-language="text" style="background-color:#fff;--shiki-dark-bg:#24292e;color:#24292e;--shiki-dark:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;" tabindex="0"><code><span class="line">libGL error: glx: failed to create dri3 screen</span>
 <span class="line">libGL error: failed to load driver: iris</span></code></pre>
 <p>因为只换了"驱动名"，没换"设备"—— Mesa 还是去开独显那个 render 节点，
 iris 当然驱不动 NVIDIA 的卡。<strong>驱动名和设备必须一起指定。</strong></p>
 <h3 id="_4">修法（实测通过）</h3>
-<pre class="astro-code astro-code-themes github-light github-dark" style="background-color:#fff;--shiki-dark-bg:#24292e;color:#24292e;--shiki-dark:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;" tabindex="0" data-language="bash"><code><span class="line">docker run --rm -it \</span>
+<pre class="astro-code astro-code-themes github-light github-dark" data-language="bash" style="background-color:#fff;--shiki-dark-bg:#24292e;color:#24292e;--shiki-dark:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;" tabindex="0"><code><span class="line">docker run --rm -it \</span>
 <span class="line">  --device /dev/dri \</span>
-<span class="line">  --group-add &quot;$(getent group render | cut -d: -f3)&quot; \</span>
-<span class="line">  --group-add &quot;$(getent group video  | cut -d: -f3)&quot; \</span>
+<span class="line">  --group-add "$(getent group render | cut -d: -f3)" \</span>
+<span class="line">  --group-add "$(getent group video  | cut -d: -f3)" \</span>
 <span class="line">  -e DRI_PRIME=pci-0000_00_02_0 \</span>
 <span class="line">  ...</span></code></pre>
 <ul>
@@ -161,13 +152,13 @@ driver: nouveau</code> —— 设备选择不是只看节点编号，所以还�
 重装驱动（<code>sudo apt install --reinstall nvidia-driver-595</code>，或切回 550 稳定版）
 后重启。本文场景下核显已够用，就没再折腾独显。</p>
 </blockquote>
-<hr />
+<hr/>
 <h2 id="2-cpu">2. CPU 不是"挂载"出来的</h2>
 <p>常见的误解是"要把 CPU 挂进容器"。其实容器默认就和宿主共享 CPU，
 不写 <code>--cpus</code> / <code>--cpuset-cpus</code> 就是用满。真正决定仿真快慢的是<strong>单核性能 +
 物理引擎的实时率（RTF）</strong>，而不是核数。</p>
 <p>量 RTF 的办法（Gazebo 自带）：</p>
-<pre class="astro-code astro-code-themes github-light github-dark" style="background-color:#fff;--shiki-dark-bg:#24292e;color:#24292e;--shiki-dark:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;" tabindex="0" data-language="bash"><code><span class="line">docker exec ican-sim gz stats -d 5</span>
+<pre class="astro-code astro-code-themes github-light github-dark" data-language="bash" style="background-color:#fff;--shiki-dark-bg:#24292e;color:#24292e;--shiki-dark:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;" tabindex="0"><code><span class="line">docker exec ican-sim gz stats -d 5</span>
 <span class="line"># Factor[0.78] SimTime[109.46] RealTime[294.22] Paused[F]</span>
 <span class="line"># Factor[0.71] ...</span></code></pre>
 <p>实测这套场景 RTF 稳定在 <strong>0.70~0.80</strong>：仿真时间比真实时间慢 20~30%，
@@ -175,17 +166,17 @@ driver: nouveau</code> —— 设备选择不是只看节点编号，所以还�
 写超时逻辑时如果混用仿真时间和墙钟时间，就会得到莫名其妙的结果。</p>
 <p>想让评测跑得快，最有效的不是加 CPU，而是<strong>别开 GUI</strong>：<code>gui:=false</code> 时
 <code>gzclient</code> 不渲染，同样的任务从"看着卡"变成几十秒跑完。</p>
-<hr />
+<hr/>
 <h2 id="3">3. 文件夹挂载：四个真实的坑</h2>
 <h3 id="31-docker">3.1 挂载源不存在时，Docker 会<strong>悄悄建一个空目录</strong></h3>
 <p>如果 <code>-v /host/path:/in/container</code> 里的 <code>/host/path</code> 不存在，Docker 不报错，
 而是自动创建一个 <strong>root 所有</strong>的空目录挂进去。容器里看起来一切正常，
 只是"工作空间是空的"——排查起来非常费劲。</p>
 <p>所以脚本里最好显式检查：</p>
-<pre class="astro-code astro-code-themes github-light github-dark" style="background-color:#fff;--shiki-dark-bg:#24292e;color:#24292e;--shiki-dark:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;" tabindex="0" data-language="bash"><code><span class="line">[[ -d &quot;${WS_HOST}&quot; ]] || { echo &quot;找不到工作空间：${WS_HOST}&quot; &gt;&amp;2; exit 1; }</span></code></pre>
+<pre class="astro-code astro-code-themes github-light github-dark" data-language="bash" style="background-color:#fff;--shiki-dark-bg:#24292e;color:#24292e;--shiki-dark:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;" tabindex="0"><code><span class="line">[[ -d "${WS_HOST}" ]] || { echo "找不到工作空间：${WS_HOST}" &gt;&amp;2; exit 1; }</span></code></pre>
 <h3 id="32">3.2 软链接不会被跟随</h3>
 <p>项目搬家后想用软链接"让旧路径还能用"，实测：</p>
-<pre class="astro-code astro-code-themes github-light github-dark" style="background-color:#fff;--shiki-dark-bg:#24292e;color:#24292e;--shiki-dark:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;" tabindex="0" data-language="bash"><code><span class="line">ln -s /home/cisyam/桌面/ican /tmp/link_test</span>
+<pre class="astro-code astro-code-themes github-light github-dark" data-language="bash" style="background-color:#fff;--shiki-dark-bg:#24292e;color:#24292e;--shiki-dark:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;" tabindex="0"><code><span class="line">ln -s /home/cisyam/桌面/ican /tmp/link_test</span>
 <span class="line">docker run --rm -v /tmp/link_test:/ws alpine ls /ws</span>
 <span class="line"># docker: Error response from daemon: error while creating mount source</span>
 <span class="line"># path '/tmp/link_test': mkdir /tmp/link_test: file exists</span></code></pre>
@@ -201,10 +192,10 @@ driver: nouveau</code> —— 设备选择不是只看节点编号，所以还�
 <p>早期脚本里写死 <code>WS_HOST=/home/cisyam/ican_shoot</code>，项目一搬到桌面就全线失效，
 更糟的是产生了"两份一模一样的拷贝"，改 A 跑 B，看起来就是"改了代码容器里没变"。</p>
 <p>改成按脚本自身位置定位，一次解决：</p>
-<pre class="astro-code astro-code-themes github-light github-dark" style="background-color:#fff;--shiki-dark-bg:#24292e;color:#24292e;--shiki-dark:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;" tabindex="0" data-language="bash"><code><span class="line">SELF=&quot;$(readlink -f &quot;${BASH_SOURCE[0]}&quot;)&quot;</span>
-<span class="line">WS_HOST=&quot;$(dirname &quot;$(dirname &quot;${SELF}&quot;)&quot;)&quot;      # docker/ 的上一级 = 项目根</span>
-<span class="line">WS_CONT=&quot;/home/dev/ican_shoot&quot;</span>
-<span class="line">docker run ... -v &quot;${WS_HOST}:${WS_CONT}:rw&quot; -w &quot;${WS_CONT}&quot; ...</span></code></pre>
+<pre class="astro-code astro-code-themes github-light github-dark" data-language="bash" style="background-color:#fff;--shiki-dark-bg:#24292e;color:#24292e;--shiki-dark:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;" tabindex="0"><code><span class="line">SELF="$(readlink -f "${BASH_SOURCE[0]}")"</span>
+<span class="line">WS_HOST="$(dirname "$(dirname "${SELF}")")"      # docker/ 的上一级 = 项目根</span>
+<span class="line">WS_CONT="/home/dev/ican_shoot"</span>
+<span class="line">docker run ... -v "${WS_HOST}:${WS_CONT}:rw" -w "${WS_CONT}" ...</span></code></pre>
 <p>"单目录架构"：<strong>工作区就是提交包本身</strong>，容器里编译产物 <code>build/ install/ log/</code>
 直接落在项目里，宿主改代码容器立刻可见，不存在同步问题。</p>
 <p>顺带一提：<strong>挂载源路径里带中文（<code>/home/cisyam/桌面/ican</code>）完全没问题</strong>，
@@ -212,19 +203,19 @@ driver: nouveau</code> —— 设备选择不是只看节点编号，所以还�
 <h3 id="34">3.4 一个项目两套脚本，容器名撞车</h3>
 <p>多套启动脚本共用 <code>--name ican-sim</code> 时，后启动的会失败或把前面的踢掉。
 统一容器名 + 开跑前 <code>docker rm -f</code> 清场，比事后猜要省事。</p>
-<hr />
+<hr/>
 <h2 id="4-ipchost">4. <code>--ipc=host</code> 的共享内存幽灵（本次最狠的坑）</h2>
 <h3 id="_5">现象</h3>
 <p>仿真明明起来了，任务却整段垮掉：<strong>四发子弹全部 0 分</strong>，而且子弹不是打偏，
 是<strong>从固定点垂直上天</strong>；状态机日志里出现 <code>上一状态 11709.2s</code>、<code>-11680.2s</code>
 这种鬼数字；一趟本该 30 秒的任务跑了 15 分钟。</p>
 <h3 id="_6">排查</h3>
-<pre class="astro-code astro-code-themes github-light github-dark" style="background-color:#fff;--shiki-dark-bg:#24292e;color:#24292e;--shiki-dark:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;" tabindex="0" data-language="bash"><code><span class="line"># 1) 机器人真值位置 vs shooter 查到的位姿</span>
+<pre class="astro-code astro-code-themes github-light github-dark" data-language="bash" style="background-color:#fff;--shiki-dark-bg:#24292e;color:#24292e;--shiki-dark:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;" tabindex="0"><code><span class="line"># 1) 机器人真值位置 vs shooter 查到的位姿</span>
 <span class="line">#    真值 (0.015, -0.006)，shooter 算出来 (-1.188, +0.549, +0.102)，枪口还指向世界 z 轴</span>
 <span class="line">python3 tools/probe_shot.py</span>
 <span class="line">​</span>
 <span class="line"># 2) 看 /tf 到底有几个发布者</span>
-<span class="line">ros2 topic info /tf -v --no-daemon | grep &quot;Node name&quot;</span>
+<span class="line">ros2 topic info /tf -v --no-daemon | grep "Node name"</span>
 <span class="line"># robot_state_publisher</span>
 <span class="line"># robot_state_publisher     ← 同一个名字出现两次？进程却只有一个！</span>
 <span class="line"># 3) 按 (父→子) 去重打印整棵 TF 树</span>
@@ -234,13 +225,13 @@ driver: nouveau</code> —— 设备选择不是只看节点编号，所以还�
 <span class="line">#   幽灵值 xyz=(-1.131,+0.707,+0.102) q=(-0.41,+0.58,-0.41,-0.58)</span></code></pre>
 <p>画成图就是这样——同一对父子坐标边，TF buffer 里同时躺着两条互相矛盾的数据。</p>
 <p>正常情况是一棵连通的树：</p>
-<pre class="astro-code astro-code-themes github-light github-dark" style="background-color:#fff;--shiki-dark-bg:#24292e;color:#24292e;--shiki-dark:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;" tabindex="0" data-language="text"><code><span class="line">  odom ──► base_footprint ──► base_link</span>
+<pre class="astro-code astro-code-themes github-light github-dark" data-language="text" style="background-color:#fff;--shiki-dark-bg:#24292e;color:#24292e;--shiki-dark:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;" tabindex="0"><code><span class="line">  odom ──► base_footprint ──► base_link</span>
 <span class="line">                │</span>
 <span class="line">                ├──► laser_cylinder_link ──► laser_link</span>
 <span class="line">                ├──► camera_link</span>
 <span class="line">                └──► wheels...</span></code></pre>
 <p>中招之后，<code>odom → base_footprint</code> 这条边上同时挂着两个值：</p>
-<pre class="astro-code astro-code-themes github-light github-dark" style="background-color:#fff;--shiki-dark-bg:#24292e;color:#24292e;--shiki-dark:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;" tabindex="0" data-language="text"><code><span class="line">  odom ──► base_footprint ──► base_link</span>
+<pre class="astro-code astro-code-themes github-light github-dark" data-language="text" style="background-color:#fff;--shiki-dark-bg:#24292e;color:#24292e;--shiki-dark:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;" tabindex="0"><code><span class="line">  odom ──► base_footprint ──► base_link</span>
 <span class="line">                │</span>
 <span class="line">                ├── 正常值 xyz=(+0.015,-0.006, 0)      ◄── 本轮仿真</span>
 <span class="line">                └── 幽灵值 xyz=(-1.131,+0.707,+0.102)  ◄── /dev/shm 里的 FastDDS 残留段</span>
@@ -255,13 +246,13 @@ driver: nouveau</code> —— 设备选择不是只看节点编号，所以还�
   子弹从固定点垂直发射；</li>
 <li><code>/clock</code> 跟着跳变，任何用仿真时间的超时/计时全部失真。</li>
 </ul>
-<pre class="astro-code astro-code-themes github-light github-dark" style="background-color:#fff;--shiki-dark-bg:#24292e;color:#24292e;--shiki-dark:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;" tabindex="0" data-language="text"><code><span class="line">$ ls -la /dev/shm | head</span>
+<pre class="astro-code astro-code-themes github-light github-dark" data-language="text" style="background-color:#fff;--shiki-dark-bg:#24292e;color:#24292e;--shiki-dark:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;" tabindex="0"><code><span class="line">$ ls -la /dev/shm | head</span>
 <span class="line">fastrtps_14785ad6596e5479   ← 12:04 本轮</span>
 <span class="line">fastrtps_389d0da2a137400c   ← 11:42，那个容器早没了</span>
 <span class="line">fastrtps_74e2db6d08d1a3df   ← 11:51，同上</span>
 <span class="line">...</span></code></pre>
 <h3 id="_8">修法：域隔离 + 进容器清共享内存</h3>
-<pre class="astro-code astro-code-themes github-light github-dark" style="background-color:#fff;--shiki-dark-bg:#24292e;color:#24292e;--shiki-dark:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;" tabindex="0" data-language="bash"><code><span class="line"># 1) 给这套仿真一个专用 DDS 域，幽灵留在默认域 0，看不见了</span>
+<pre class="astro-code astro-code-themes github-light github-dark" data-language="bash" style="background-color:#fff;--shiki-dark-bg:#24292e;color:#24292e;--shiki-dark:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;" tabindex="0"><code><span class="line"># 1) 给这套仿真一个专用 DDS 域，幽灵留在默认域 0，看不见了</span>
 <span class="line">-e ROS_DOMAIN_ID=42</span>
 <span class="line">​</span>
 <span class="line"># 2) 启动前清掉共享内存残留。注意：这一步要在**容器内**做</span>
@@ -275,35 +266,35 @@ driver: nouveau</code> —— 设备选择不是只看节点编号，所以还�
 <p>经验：只要用了 <code>--ipc=host</code> + DDS，<strong>每次启动前清 <code>/dev/shm/fastrtps_*</code>，
 并且给每套仿真一个独立 <code>ROS_DOMAIN_ID</code></strong>，能省掉一整类玄学问题。</p>
 </blockquote>
-<hr />
+<hr/>
 <h2 id="5-ros2-clidaemon-no-daemon">5. 容器里的 <code>ros2</code> CLI：daemon 会坏，加 <code>--no-daemon</code></h2>
 <h3 id="_9">现象</h3>
 <p>启动脚本里"等服务就绪"的循环永远等不到，最后打印"服务不存在"放弃 —— 但服务明明在。</p>
-<pre class="astro-code astro-code-themes github-light github-dark" style="background-color:#fff;--shiki-dark-bg:#24292e;color:#24292e;--shiki-dark:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;" tabindex="0" data-language="text"><code><span class="line">$ ros2 service list          # 空！</span>
+<pre class="astro-code astro-code-themes github-light github-dark" data-language="text" style="background-color:#fff;--shiki-dark-bg:#24292e;color:#24292e;--shiki-dark:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;" tabindex="0"><code><span class="line">$ ros2 service list          # 空！</span>
 <span class="line">$ ros2 param get /shooter bullet_speed</span>
-<span class="line">xmlrpc.client.Fault: &lt;Fault 1: &quot;&lt;class 'RuntimeError'&gt;:!rclpy.ok()&quot;&gt;</span></code></pre>
+<span class="line">xmlrpc.client.Fault: &lt;Fault 1: "&lt;class 'RuntimeError'&gt;:!rclpy.ok()"&gt;</span></code></pre>
 <h3 id="_10">根因</h3>
 <p><code>ros2</code> CLI 默认走一个后台 daemon 做发现，这个 daemon 在容器里很容易进入坏状态
 （<code>!rclpy.ok()</code>）。坏掉之后 <code>ros2 service list</code> <strong>不报错、直接返回空</strong>，
 脚本据此判断"服务没起来"，于是白等 30 秒后放弃 —— 表现就是"仿真起不来/参数没生效"。</p>
 <h3 id="_11">修法</h3>
-<pre class="astro-code astro-code-themes github-light github-dark" style="background-color:#fff;--shiki-dark-bg:#24292e;color:#24292e;--shiki-dark:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;" tabindex="0" data-language="bash"><code><span class="line">ros2nd() { ros2 &quot;$@&quot; --no-daemon; }     # 所有 CLI 调用都绕过 daemon</span>
+<pre class="astro-code astro-code-themes github-light github-dark" data-language="bash" style="background-color:#fff;--shiki-dark-bg:#24292e;color:#24292e;--shiki-dark:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;" tabindex="0"><code><span class="line">ros2nd() { ros2 "$@" --no-daemon; }     # 所有 CLI 调用都绕过 daemon</span>
 <span class="line">ros2nd service list | grep -q '/shooter/shoot'</span></code></pre>
-<hr />
+<hr/>
 <h2 id="6-set-o-pipefail-grep-q">6. <code>set -o pipefail</code> + <code>grep -q</code> = 假失败</h2>
 <h3 id="_12">现象</h3>
 <p>仿真日志里明明白白有 <code>Shooter services ready</code>，脚本却打印"仿真启动失败"。</p>
 <h3 id="_13">根因</h3>
-<pre class="astro-code astro-code-themes github-light github-dark" style="background-color:#fff;--shiki-dark-bg:#24292e;color:#24292e;--shiki-dark:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;" tabindex="0" data-language="bash"><code><span class="line">set -Eeuo pipefail</span>
+<pre class="astro-code astro-code-themes github-light github-dark" data-language="bash" style="background-color:#fff;--shiki-dark-bg:#24292e;color:#24292e;--shiki-dark:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;" tabindex="0"><code><span class="line">set -Eeuo pipefail</span>
 <span class="line">docker logs ican-sim 2&gt;&amp;1 | grep -q 'Shooter services ready' &amp;&amp; echo ok</span>
 <span class="line"># → 判失败</span></code></pre>
 <p><code>grep -q</code> 一匹配到就退出并关闭管道，上游 <code>docker logs</code> 收到 SIGPIPE 返回 <strong>141</strong>，
 <code>pipefail</code> 会把整条管道的退出码判为失败。日志越大越必现
 （我们的日志被 TF 警告刷到两万多行）。</p>
 <h3 id="_14">修法：别用管道判内容，捕获后做字符串比对</h3>
-<pre class="astro-code astro-code-themes github-light github-dark" style="background-color:#fff;--shiki-dark-bg:#24292e;color:#24292e;--shiki-dark:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;" tabindex="0" data-language="bash"><code><span class="line">sim_log_has() { [[ &quot;$(docker logs ican-sim 2&gt;&amp;1 || true)&quot; == *&quot;$1&quot;* ]]; }</span>
-<span class="line">sim_log_has 'Shooter services ready' || { echo &quot;启动失败&quot;; exit 1; }</span></code></pre>
-<hr />
+<pre class="astro-code astro-code-themes github-light github-dark" data-language="bash" style="background-color:#fff;--shiki-dark-bg:#24292e;color:#24292e;--shiki-dark:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;" tabindex="0"><code><span class="line">sim_log_has() { [[ "$(docker logs ican-sim 2&gt;&amp;1 || true)" == *"$1"* ]]; }</span>
+<span class="line">sim_log_has 'Shooter services ready' || { echo "启动失败"; exit 1; }</span></code></pre>
+<hr/>
 <h2 id="7">7. 排查速查表</h2>
 <table>
 <thead>
@@ -356,7 +347,7 @@ driver: nouveau</code> —— 设备选择不是只看节点编号，所以还�
 </tr>
 </tbody>
 </table>
-<hr />
+<hr/>
 <h2 id="8">8. 最后</h2>
 <p>回头看，真正花时间的不是"把 22.04 跑起来"（那部分半小时就够），而是
 <strong>设备权限、共享内存残留、CLI daemon 这类"不报错但行为不对"的坑</strong>：
@@ -367,11 +358,7 @@ driver: nouveau</code> —— 设备选择不是只看节点编号，所以还�
 <li>每套仿真一个独立 <code>ROS_DOMAIN_ID</code>，启动前清 <code>/dev/shm/fastrtps_*</code>；</li>
 <li>所有 <code>ros2</code> CLI 加 <code>--no-daemon</code>，所有"判日志"改成字符串比对。</li>
 </ol>
-<hr />
+<hr/>
 <p><em>环境：Ubuntu 24.04 宿主 + Ubuntu 22.04/ROS 2 Humble/Gazebo 11 容器，
 Docker 29.1.3，Intel 核显 + NVIDIA 独显混合笔记本。文中所有修法均为本机实测。</em></p>
- </div> </article> </div>  <footer class="mt-16 pb-10 text-center"> <div class="mx-auto max-w-6xl px-6"> <div class="glass rounded-3xl px-6 py-8"> <p class="text-sm text-ink-500 dark:text-ink-300">
-🌸 樱落小站 · 用 <span class="text-sakura-500">❤</span> 与 Astro 构建
-</p> <p class="mt-2 text-xs text-ink-300">
-© 2026 cisyam555 · 欢迎常来看看呀～
-</p> </div> </div> </footer> <!-- 全站搜索数据 --> <script type="application/json" id="search-data">[{"title": "从识别手势到精准点击：OpenCV 手势鼠标的实现与优化", "tags": ["OpenCV", "MediaPipe", "Python", "人机交互", "项目实践"], "date": "2026/10/29", "href": "/posts/opencv-mediapipe-gesture-mouse/"}, {"title": "卡尔曼滤波到底是什么？从一辆小车开始讲明白", "tags": ["卡尔曼滤波", "机器人", "状态估计", "传感器融合", "学习笔记"], "date": "2026/10/20", "href": "/posts/kalman-filter-explained/"}, {"title": "YOLOv8 和 OpenCV 的区别与联系：从原理到应用的图文详解", "tags": ["YOLOv8", "OpenCV", "计算机视觉", "目标检测", "学习笔记"], "date": "2026/10/17", "href": "/posts/yolov8-opencv-differences-and-connections/"}, {"title": "YOLOv8 目标检测实战：从环境搭建到模型训练", "tags": ["YOLOv8", "目标检测", "PyTorch", "深度学习", "学习笔记"], "date": "2026/10/10", "href": "/posts/yolov8-object-detection-training/"}, {"title": "在 Ubuntu 24.04 用 Docker 运行 Humble + Gazebo Classic：显卡、挂载、DDS 串台踩坑全记录", "tags": ["Docker", "ROS 2", "Gazebo", "踩坑"], "date": "2026/10/2", "href": "/posts/docker-ros2-humble-2404-pitfalls/"}, {"title": "大模型“捡数据”，机器人“造数据”：具身智能的数据困局", "tags": ["具身智能", "数据", "ROS 2", "机器人"], "date": "2026/9/24", "href": "/posts/embodied-data-bottleneck/"}, {"title": "ROS 2 话题通信的 2 个静默陷阱：我写系统状态可视化工具时踩过的坑", "tags": ["ROS 2", "话题通信", "静默失败", "踩坑"], "date": "2026/9/19", "href": "/posts/ros2-topic-silent-failures/"}, {"title": "Python 学习笔记：装饰器与上下文管理器", "tags": ["Python", "装饰器", "上下文管理器", "学习笔记"], "date": "2026/9/9", "href": "/posts/python-decorator-context-manager/"}]</script> </body> </html>
+</div> </article> </div> <!-- 全站搜索数据 --> <script id="search-data" type="application/json">[{"title": "卡尔曼滤波到底是什么？从一辆小车开始讲明白", "tags": ["卡尔曼滤波", "机器人", "状态估计", "传感器融合", "学习笔记"], "date": "2026/10/20", "href": "/posts/kalman-filter-explained/"}, {"title": "YOLOv8 和 OpenCV 的区别与联系：从原理到应用的图文详解", "tags": ["YOLOv8", "OpenCV", "计算机视觉", "目标检测", "学习笔记"], "date": "2026/10/17", "href": "/posts/yolov8-opencv-differences-and-connections/"}, {"title": "YOLOv8 目标检测实战：从环境搭建到模型训练", "tags": ["YOLOv8", "目标检测", "PyTorch", "深度学习", "学习笔记"], "date": "2026/10/10", "href": "/posts/yolov8-object-detection-training/"}, {"title": "在 Ubuntu 24.04 用 Docker 运行 Humble + Gazebo Classic：显卡、挂载、DDS 串台踩坑全记录", "tags": ["Docker", "ROS 2", "Gazebo", "踩坑"], "date": "2026/10/2", "href": "/posts/docker-ros2-humble-2404-pitfalls/"}, {"title": "大模型“捡数据”，机器人“造数据”：具身智能的数据困局", "tags": ["具身智能", "数据", "ROS 2", "机器人"], "date": "2026/9/24", "href": "/posts/embodied-data-bottleneck/"}, {"title": "ROS 2 话题通信的 2 个静默陷阱：我写系统状态可视化工具时踩过的坑", "tags": ["ROS 2", "话题通信", "静默失败", "踩坑"], "date": "2026/9/19", "href": "/posts/ros2-topic-silent-failures/"}, {"title": "Python 学习笔记：装饰器与上下文管理器", "tags": ["Python", "装饰器", "上下文管理器", "学习笔记"], "date": "2026/9/9", "href": "/posts/python-decorator-context-manager/"}]</script> <footer class="site-footer"><div class="footer-top"><a class="footer-brand" href="/"><svg aria-hidden="true" fill="none" viewbox="0 0 32 32"><path d="M11 8L3 16l8 8m10-16 8 8-8 8M19 4l-6 24" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.4"></path></svg>cisyam<span>.</span></a><p>探索技术的边界，记录每一步成长。</p><a href="#top">BACK TO TOP ↑</a></div><div><span>© 2026 cisyam555 · cisyam · 技术手记</span><span>KEEP LEARNING. KEEP BUILDING.</span><a href="https://github.com/cisyam555" rel="noopener noreferrer" target="_blank">GitHub ↗</a></div></footer><dialog id="search-dialog"><form method="dialog"><label for="site-search">在小站里找一找</label><button aria-label="关闭搜索">×</button></form><input autocomplete="off" id="site-search" placeholder="输入标题或标签，例如 ROS、Python…" type="search"/><div aria-live="polite" id="search-results"></div><small>ESC 关闭 · Ctrl / ⌘ K 打开搜索</small></dialog></body> </html>
