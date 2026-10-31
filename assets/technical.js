@@ -2,15 +2,15 @@
   'use strict';
   const q=s=>document.querySelector(s);
   const imageFor=href=>{
-    if(/gesture-mouse/.test(href))return {src:'/posts/opencv-mediapipe-gesture-mouse/assets/06-hand-landmarks.png',alt:'MediaPipe 手部关键点与手势控制示意图',photo:'/assets/photos/circuit.jpg'};
-    if(/kalman/.test(href))return {src:'/posts/kalman-filter-explained/kalman-tracking.png',alt:'卡尔曼滤波的小车轨迹跟踪仿真',photo:'/assets/photos/robot.jpg'};
-    if(/yolov8-opencv/.test(href))return {src:'/posts/yolov8-opencv-differences-and-connections/figure-01.png',alt:'OpenCV 与 YOLOv8 的技术定位图',photo:'/assets/photos/circuit.jpg'};
-    if(/object-detection/.test(href))return {src:'/assets/cover-yolo.svg',alt:'目标检测框与视觉识别技术图',photo:'/assets/photos/circuit.jpg'};
-    if(/docker/.test(href))return {src:'/assets/cover-docker.svg',alt:'Docker 容器与 ROS 2 运行环境示意图',photo:'/assets/photos/code.jpg'};
-    if(/embodied/.test(href))return {src:'/posts/embodied-data-bottleneck/data_compare.png',alt:'具身智能与大语言模型的数据规模对比',photo:'/assets/photos/robot.jpg'};
-    if(/ros2/.test(href))return {src:'/assets/cover-ros.svg',alt:'ROS 2 节点与话题通信示意图',photo:'/assets/photos/robot.jpg'};
-    if(/python/.test(href))return {src:'/assets/photos/code.jpg',alt:'编辑器中的代码与 Python 开发实践',photo:'/assets/photos/code.jpg'};
-    return {src:'/assets/photos/code.jpg',alt:'代码与技术实践',photo:'/assets/photos/code.jpg'};
+    if(/gesture-mouse/.test(href))return {src:'/posts/opencv-mediapipe-gesture-mouse/assets/06-hand-landmarks.png',alt:'MediaPipe 手部关键点与手势控制示意图',photo:'/assets/sky/garden.jpg'};
+    if(/kalman/.test(href))return {src:'/posts/kalman-filter-explained/kalman-tracking.png',alt:'卡尔曼滤波的小车轨迹跟踪仿真',photo:'/assets/sky/guardian.jpg'};
+    if(/yolov8-opencv/.test(href))return {src:'/posts/yolov8-opencv-differences-and-connections/figure-01.png',alt:'OpenCV 与 YOLOv8 的技术定位图',photo:'/assets/sky/garden.jpg'};
+    if(/object-detection/.test(href))return {src:'/assets/cover-yolo.svg',alt:'目标检测框与视觉识别技术图',photo:'/assets/sky/garden.jpg'};
+    if(/docker/.test(href))return {src:'/assets/cover-docker.svg',alt:'Docker 容器与 ROS 2 运行环境示意图',photo:'/assets/sky/morning.jpg'};
+    if(/embodied/.test(href))return {src:'/posts/embodied-data-bottleneck/data_compare.png',alt:'具身智能与大语言模型的数据规模对比',photo:'/assets/sky/guardian.jpg'};
+    if(/ros2/.test(href))return {src:'/assets/cover-ros.svg',alt:'ROS 2 节点与话题通信示意图',photo:'/assets/sky/guardian.jpg'};
+    if(/python/.test(href))return {src:'/assets/photos/code.jpg',alt:'编辑器中的代码与 Python 开发实践',photo:'/assets/sky/morning.jpg'};
+    return {src:'/assets/photos/code.jpg',alt:'代码与技术实践',photo:'/assets/sky/morning.jpg'};
   };
   document.querySelectorAll('#post-list .post-card').forEach(card=>{
     const link=card.querySelector('h3 a');if(!link||card.querySelector('.post-thumbnail'))return;
@@ -18,15 +18,15 @@
     const cover=document.createElement('a');cover.className='post-thumbnail';cover.href=link.getAttribute('href');cover.tabIndex=-1;cover.setAttribute('aria-hidden','true');
     const img=document.createElement('img');img.src=data.src;img.alt='';img.loading='lazy';img.decoding='async';
     if(/\.png/.test(data.src))cover.classList.add('diagram-cover');
-    const label=document.createElement('span');label.className='thumbnail-caption';label.textContent='READ FIELD NOTE ↗';
+    const label=document.createElement('span');label.className='thumbnail-caption';label.textContent='翻开这篇手记 ↗';
     cover.append(img,label);card.prepend(cover);
   });
   // The lead photograph sets context; the original diagrams remain in the article body.
   const article=q('.journal-subpage article');const header=article?.querySelector(':scope > header');
   if(header&&location.pathname.startsWith('/posts/')&&!article.querySelector('.article-lead')){
     const data=imageFor(location.pathname);const figure=document.createElement('figure');figure.className='article-lead';
-    const img=document.createElement('img');img.src=data.photo;img.alt=data.alt.includes('示意')||data.alt.includes('仿真')||data.alt.includes('对比')?'机器人、硬件与代码的技术实践主题摄影':data.alt;img.decoding='async';
-    const caption=document.createElement('figcaption');const category=document.createElement('span');category.textContent='CISYAM / ENGINEERING NOTES';const detail=document.createElement('span');detail.textContent='从原理到实践';caption.append(category,detail);figure.append(img,caption);header.after(figure);
+    const img=document.createElement('img');img.src=data.photo;img.alt='《天空之城》的天空与绿意场景，文章主题氛围配图';img.decoding='async';
+    const caption=document.createElement('figcaption');const category=document.createElement('span');category.textContent='云间的小站 · cisyam';const detail=document.createElement('span');detail.textContent='学习的路上，慢慢记录';caption.append(category,detail);figure.append(img,caption);header.after(figure);
   }
   if(article&&header){
     const shell=article.parentElement;shell.classList.add('article-layout');
