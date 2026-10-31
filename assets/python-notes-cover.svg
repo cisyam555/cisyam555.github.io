@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="360" viewBox="0 0 640 360" role="img" aria-labelledby="title desc">
+<title id="title">Python 装饰器与上下文管理器</title><desc id="desc">文章中的代码片段：用 log 装饰 add 函数，以及用 FileManager 管理文件资源。</desc>
+<rect width="640" height="360" fill="#f4f7ef"/>
+<rect x="20" y="16" width="600" height="328" rx="12" fill="#fffef9" stroke="#d6e2d6"/>
+<text x="43" y="54" font-family="sans-serif" font-size="24" font-weight="600" fill="#355e58">Python 装饰器与上下文管理器</text>
+<path d="M43 75h554" stroke="#dbe4d8"/>
+<g font-family="monospace" font-size="20" fill="#3d5657">
+<text x="44" y="114" fill="#658e61">@log</text>
+<text x="44" y="145"><tspan fill="#637cb0">def</tspan> add(a, b):</text>
+<text x="44" y="176" xml:space="preserve">    <tspan fill="#637cb0">return</tspan> a + b</text>
+<path d="M43 207h554" stroke="#dbe4d8" stroke-dasharray="4 5"/>
+<text x="44" y="248" font-size="18"><tspan fill="#637cb0">with</tspan> FileManager(<tspan fill="#8d7956">"data.txt"</tspan>, <tspan fill="#8d7956">"w"</tspan>) <tspan fill="#637cb0">as</tspan> f:</text>
+<text x="44" y="279" font-size="18" xml:space="preserve">    f.write(<tspan fill="#8d7956">"hello"</tspan>)</text>
+</g>
+<text x="44" y="321" font-family="sans-serif" font-size="13" fill="#82958a">装饰函数行为  ·  管理资源的获取与释放</text>
+</svg>
