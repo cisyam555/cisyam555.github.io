@@ -1,14 +1,14 @@
 [
   {
-    "title": "机器人没抓住盘子之后：VLA 如何通过闭环反馈调整动作？",
-    "href": "/posts/vla-closed-loop-grasp/",
-    "description": "用 7 张示意图讲清机器人抓空后，如何验证结果、更新观察，并通过闭环反馈调整动作和进行有限恢复。",
+    "title": "从人类示范到机器人策略：VLA 如何学习动作？",
+    "href": "/posts/vla-learning-from-demonstrations/",
+    "description": "用 7 张图讲清 VLA 如何从示范中学习：数据采集、时间对齐、行为克隆、动作头、片段监督与泛化。",
     "date": "2026-11-07",
     "tags": [
       "VLA",
-      "闭环反馈",
+      "模仿学习",
       "机器人",
-      "抓取恢复"
+      "训练数据"
     ]
   },
   {
