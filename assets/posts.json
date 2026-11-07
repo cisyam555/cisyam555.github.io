@@ -1,5 +1,17 @@
 [
   {
+    "title": "机器人没抓住盘子之后：VLA 如何通过闭环反馈调整动作？",
+    "href": "/posts/vla-closed-loop-grasp/",
+    "description": "用 7 张示意图讲清机器人抓空后，如何验证结果、更新观察，并通过闭环反馈调整动作和进行有限恢复。",
+    "date": "2026-11-07",
+    "tags": [
+      "VLA",
+      "闭环反馈",
+      "机器人",
+      "抓取恢复"
+    ]
+  },
+  {
     "title": "从识别手势到精准点击：OpenCV 手势鼠标的实现与优化",
     "href": "/posts/opencv-mediapipe-gesture-mouse/",
     "description": "用 OpenCV 与 MediaPipe 实现手势鼠标，记录手部关键点、相对指针、手势防抖与精准点击的优化实践。",
