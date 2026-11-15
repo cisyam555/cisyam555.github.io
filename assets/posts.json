@@ -1,5 +1,18 @@
 [
   {
+    "title": "强化学习入门：机器人如何通过试错学会完成任务？",
+    "description": "从 ROS 学习者的视角，结合机器人打拳案例，理解强化学习流程、奖励设计、PPO、并行采样与训练故障排查。",
+    "date": "2026-11-15",
+    "tags": [
+      "强化学习",
+      "PPO",
+      "机器人",
+      "ROS 2",
+      "学习笔记"
+    ],
+    "href": "/posts/reinforcement-learning-robotics-introduction/"
+  },
+  {
     "title": "从人类示范到机器人策略：VLA 如何学习动作？",
     "href": "/posts/vla-learning-from-demonstrations/",
     "description": "用 7 张图讲清 VLA 如何从示范中学习：数据采集、时间对齐、行为克隆、动作头、片段监督与泛化。",
