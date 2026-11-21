@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="580" viewBox="0 0 1000 580" role="img" aria-labelledby="title desc">
+<title id="title">ROS 与 LeRobot 的集成示意</title><desc id="desc">ROS 采集观测，适配程序整理数据后交给 LeRobot 中的策略，预测动作经转换后由机器人控制器执行。新的观测形成反馈。此为一种集成方式，LeRobot 可以不依赖 ROS 运行。</desc>
+<defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0 0L10 5L0 10Z" fill="#47736c"/></marker></defs>
+<rect width="1000" height="580" rx="20" fill="#f6f8f3"/>
+<g font-family="Noto Sans CJK SC,Microsoft YaHei,sans-serif" fill="#263f3b">
+<text x="50" y="56" font-size="28" font-weight="700">ROS 与 LeRobot：连接观测、策略与执行</text>
+<text x="50" y="94" font-size="19" fill="#526f69">一种可能的集成方式，具体接口取决于机器人与策略</text>
+<rect x="60" y="150" width="370" height="115" rx="12" fill="#e1eee7" stroke="#90b5a7"/>
+<text x="245" y="194" text-anchor="middle" font-size="25" font-weight="700">ROS 观测接口</text><text x="245" y="232" text-anchor="middle" font-size="21">相机图像、机器人状态</text>
+<rect x="570" y="150" width="370" height="115" rx="12" fill="#f0e8d8" stroke="#c6b58b"/>
+<text x="755" y="194" text-anchor="middle" font-size="25" font-weight="700">输入适配</text><text x="755" y="232" text-anchor="middle" font-size="21">字段、格式、时间与归一化</text>
+<rect x="570" y="365" width="370" height="115" rx="12" fill="#e4edf2" stroke="#9bb3c0"/>
+<text x="755" y="410" text-anchor="middle" font-size="25" font-weight="700">LeRobot 中的策略</text><text x="755" y="447" text-anchor="middle" font-size="21">根据观测预测动作</text>
+<rect x="60" y="365" width="370" height="115" rx="12" fill="#e1eee7" stroke="#90b5a7"/>
+<text x="245" y="410" text-anchor="middle" font-size="25" font-weight="700">动作适配与控制器</text><text x="245" y="447" text-anchor="middle" font-size="21">解释动作、转换与执行</text>
+<g fill="none" stroke="#47736c" stroke-width="3" marker-end="url(#arrow)"><path d="M430 207H558"/><path d="M755 265V353"/><path d="M570 422H442"/><path d="M245 365V277"/></g>
+<text x="270" y="321" font-size="19">执行后的新观测</text>
+<text x="500" y="537" text-anchor="middle" font-size="19" fill="#526f69">LeRobot 也可以通过受支持的硬件接口或仿真环境独立运行</text>
+</g></svg>

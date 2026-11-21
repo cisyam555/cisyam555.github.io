@@ -1,5 +1,18 @@
 [
   {
+    "title": "学过 ROS，再看 LeRobot：机器人学习框架到底解决什么问题？",
+    "description": "从机械臂抓取任务出发，理解 ROS 与 LeRobot 的职责、示范数据与策略训练，以及学习策略接入机器人时的输入输出适配。",
+    "date": "2026-11-21",
+    "tags": [
+      "ROS 2",
+      "LeRobot",
+      "机器人",
+      "模仿学习",
+      "学习笔记"
+    ],
+    "href": "/posts/ros-and-lerobot-learning-framework/"
+  },
+  {
     "title": "强化学习入门：机器人如何通过试错学会完成任务？",
     "description": "从 ROS 学习者的视角，结合机器人打拳案例，理解强化学习流程、奖励设计、PPO、并行采样与训练故障排查。",
     "date": "2026-11-15",
