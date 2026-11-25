@@ -1,5 +1,18 @@
 [
   {
+    "title": "机器人如何自主探索未知环境？理解 SLAM、Nav2 与前沿探索",
+    "description": "从陌生房间建图出发，理解 SLAM、Nav2 与 explore_lite 的分工，以及前沿检测、目标选择和实际导航约束。",
+    "date": "2026-11-25",
+    "tags": [
+      "ROS 2",
+      "自主探索",
+      "Nav2",
+      "SLAM",
+      "机器人"
+    ],
+    "href": "/posts/ros2-frontier-autonomous-exploration/"
+  },
+  {
     "title": "学过 ROS，再看 LeRobot：机器人学习框架到底解决什么问题？",
     "description": "从机械臂抓取任务出发，理解 ROS 与 LeRobot 的职责、示范数据与策略训练，以及学习策略接入机器人时的输入输出适配。",
     "date": "2026-11-21",

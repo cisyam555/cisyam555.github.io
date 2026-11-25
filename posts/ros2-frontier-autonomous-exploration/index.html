@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+
+<html lang="zh-CN"> <head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0" name="viewport"/><title>机器人如何自主探索未知环境？理解 SLAM、Nav2 与前沿探索 | cisyam · 技术手记</title><meta content="从陌生房间建图出发，理解 SLAM、Nav2 与 explore_lite 的分工，以及前沿检测、目标选择和实际导航约束。" name="description"/><link href="/favicon.svg" rel="icon"/><!-- 主题初始化：在页面渲染前读取偏好，避免暗色模式闪烁 --><script>try{document.documentElement.classList.toggle('dark',localStorage.getItem('sky-theme')==='dark')}catch{}</script><link href="/_astro/_page_.CDZEDPZI.css" rel="stylesheet"/><meta content="机器人如何自主探索未知环境？理解 SLAM、Nav2 与前沿探索" property="og:title"/><meta content="从陌生房间建图出发，理解 SLAM、Nav2 与 explore_lite 的分工，以及前沿检测、目标选择和实际导航约束。" property="og:description"/><meta content="article" property="og:type"/><link href="/assets/journal.css?v=4e2482d400" rel="stylesheet"/><script defer="" src="/assets/journal.js?v=2b2e40638f"></script><link href="/assets/studio.css?v=5eb8f44405" rel="stylesheet"/><link href="/assets/editorial.css?v=20261030a" rel="stylesheet"/><link href="/assets/technical.css?v=534056559f" rel="stylesheet"/><script defer="" src="/assets/technical.js?v=b2d8808268"></script><link href="/assets/sky.css?v=c89e983f53" rel="stylesheet"/><meta content="https://cisyam555.github.io/posts/ros2-frontier-autonomous-exploration/" property="og:url"/><meta content="2026-11-25T12:00:00+08:00" property="article:published_time"/><style>.rl-post .prose-blog{overflow-wrap:anywhere;line-height:1.95}.rl-post .prose-blog h2{scroll-margin-top:95px}.rl-post .rl-meta,.rl-post .rl-intro{color:var(--muted,#64716c);line-height:1.8}.rl-post .rl-intro{margin:1rem 0}.rl-post .rl-figure{margin:2rem 0!important}.rl-post .rl-figure img{display:block;width:100%;height:auto!important;object-fit:contain!important;border-radius:12px}.rl-post .rl-figure figcaption{position:static!important;display:block!important;padding:12px 4px!important;font-size:.85em!important;color:inherit!important;background:none!important;line-height:1.7}.rl-table{overflow-x:auto;margin:1.5rem 0}.rl-table table{width:100%;border-collapse:collapse;line-height:1.8;font-size:.94em;min-width:390px}.rl-table th,.rl-table td{padding:12px 14px;border:1px solid #8a9c9166;text-align:left;vertical-align:top}.rl-table th{background:#73958118}.rl-post blockquote{padding:1rem 1.2rem;border-left:3px solid #719c8c;background:#719c8c12;margin:1.5rem 0}.rl-post blockquote p{margin:0}@media(max-width:600px){.rl-table th,.rl-table td{padding:9px 10px}.rl-post .prose-blog{font-size:15px}}</style><link href="https://cisyam555.github.io/posts/ros2-frontier-autonomous-exploration/" rel="canonical"/><meta content="https://cisyam555.github.io/assets/cover-ros.svg" property="og:image"/></head> <body class="journal-subpage rl-post" id="top"><nav aria-label="主导航" class="site-nav"><div class="nav-inner"><a class="brand" href="/"><svg aria-hidden="true" fill="none" viewbox="0 0 32 32"><path d="M11 8L3 16l8 8m10-16 8 8-8 8M19 4l-6 24" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.4"></path></svg><span>cisyam<span class="brand-dot">.</span><small>技术手记 / ENGINEERING JOURNAL</small></span></a><div class="nav-links" id="nav-links"><a href="/">首页</a><a href="/#featured">精选专题</a><a href="/archive/">文章归档</a><a href="/links/">友链</a><a href="/about/">关于我</a></div><div class="nav-actions"><button aria-label="搜索文章" class="search-open" id="search-open"><svg fill="none" height="17" stroke="currentColor" stroke-width="1.6" viewbox="0 0 24 24" width="17"><circle cx="10.5" cy="10.5" r="6.5"></circle><path d="M16 16l5 5"></path></svg><kbd>⌘ K</kbd></button><a class="nav-github" href="https://github.com/cisyam555" rel="noopener noreferrer" target="_blank">GitHub ↗</a><a class="admin-entry" href="/admin/" title="使用 GitHub 登录文章管理后台">管理后台 ↗</a><button aria-label="切换主题" class="icon-button" id="theme-button">☾</button><button aria-expanded="false" aria-label="展开导航" class="icon-button menu-button" id="menu-button">☰</button></div></div></nav> <!-- 花瓣飘落粒子动画：全屏 canvas，固定在页面最底层 --> <!-- 搜索弹窗 --> <div class="mx-auto max-w-3xl px-4 md:px-6" style="padding-top: 7rem;"> <a class="mb-6 inline-block text-sm text-ink-500 transition hover:text-sakura-500 dark:text-ink-300" href="/">
+← 返回首页
+</a> <article class="glass rounded-3xl p-7 md:p-10"> <header class="border-b border-sakura-200/60 pb-6 dark:border-yoru-600"><p class="rl-meta"><time datetime="2026-11-25">2026-11-25</time> · ROS 2 自主探索 · 技术解析</p><h1 class="text-2xl font-extrabold leading-snug md:text-3xl">机器人如何自主探索未知环境？理解 SLAM、Nav2 与前沿探索</h1><p class="rl-intro">从陌生房间建图出发，理解 SLAM、Nav2 与 explore_lite 的分工，以及前沿检测、目标选择和实际导航约束。</p><div class="mt-4 flex flex-wrap gap-2"><span class="tag-pill"># ROS 2</span><span class="tag-pill"># 自主探索</span><span class="tag-pill"># Nav2</span><span class="tag-pill"># SLAM</span><span class="tag-pill"># 机器人</span></div></header> <div class="prose-blog mt-8"><p>把一台移动机器人放进陌生房间，要求它在没有人工遥控的情况下完成建图。它需要观察墙壁、绕开障碍，还要不断决定：接下来去哪里，才能看到更多尚未探索的空间？</p>
+<p>如果目标已经确定，导航系统可以规划路径并控制机器人到达。但在自主探索任务中，目标本身也需要由程序产生。本文以 ROS 2 开源项目 m-explore-ros2 为例，解释探索决策如何与 SLAM、Nav2 配合，让机器人逐步扩大地图。</p>
+<h2 id="section-1">一、从“去厨房”到“探索整套房间”</h2>
+<p>先看一个熟悉的任务：让机器人从客厅走到厨房。</p>
+<p>机器人需要确定自己的位置与朝向，知道厨房目标在哪里，再找到绕开沙发、穿过门口的路线。运动过程中，传感器继续提供新观测，定位与控制模块持续修正估计和动作。</p>
+<p>这里，人已经给出了目的地。只要目标位姿明确，Nav2 就可以组织规划与控制。</p>
+<p>如果换成“探索这套陌生房间”，情况就不同了。机器人最初只知道传感器覆盖范围内的一小片区域，厨房可能还没有出现在地图上。此时，系统需要根据不断变化的地图，自动选择能够扩大观测范围的位置。</p>
+<p><strong>自主探索增加的关键能力，就是持续生成探索目标。</strong></p>
+<h2 id="section-2">二、SLAM、探索模块和 Nav2 怎样分工？</h2>
+<p>可以把这套系统理解为几个相互配合的模块。</p>
+<div class="rl-table"><table>
+<thead>
+<tr>
+<th>模块</th>
+<th>主要职责</th>
+<th>交给其他模块的信息</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>SLAM</td>
+<td>估计机器人位姿，建立和更新地图</td>
+<td>地图与定位相关信息</td>
+</tr>
+<tr>
+<td>explore_lite</td>
+<td>根据地图寻找前沿，选择探索目标</td>
+<td>下一处导航目标</td>
+</tr>
+<tr>
+<td>Nav2</td>
+<td>规划路径、计算运动指令并反馈导航结果</td>
+<td>速度指令与任务状态</td>
+</tr>
+<tr>
+<td>底盘和传感器</td>
+<td>执行动作，测量运动与周围环境</td>
+<td>新的里程计、激光等数据</td>
+</tr>
+</tbody>
+</table></div>
+<p>SLAM 根据已有运动和观测估计“我在哪里、环境是什么样”，探索模块据此选择下一处目的地，Nav2 再组织机器人到达。真实移动带来新的观测，SLAM 继续扩展地图，探索模块也就有了新的选择依据。</p>
+<p>这些模块持续协作，并不要求它们严格按同一频率依次执行。地图更新、探索目标计算和局部控制各有自己的运行节奏。</p>
+<p>实际接入时，还要保证地图、机器人位姿和目标使用的坐标系能够通过 TF 正确关联。一个数值正确、参考坐标系却不匹配的目标，同样无法支持正常导航。</p>
+<h2 id="section-3">三、什么是前沿？</h2>
+<p>占据栅格地图把环境划分成许多小格。对入门理解而言，可以先关注三种状态：已知空闲、已知障碍和未知。</p>
+<p>想象机器人已经扫描了走廊，但旁边房间内部还没有看清。走廊是已知空闲区域，房间深处是未知区域，两者在门口附近相接。</p>
+<p><strong>前沿（frontier）就是已知空闲区域与未知区域的交界。</strong>靠近这样的边界，传感器通常有机会获得新的环境观测。</p>
+<p>“前沿”描述地图中的空间关系，与机器人当前面向哪里没有必然关系。它可能在机器人的侧面，也可能在刚刚经过的岔路口。</p>
+<p>这里还要区分两个层次：从概念上看，前沿是一条边界；在 m-explore-ros2 的具体实现中，候选前沿格是“自身为未知，且上下左右至少有一个空闲邻格”的格子。因此，检测出的前沿格不等同于已经确认可安全停车的位置。</p>
+<h2 id="section-4">四、怎样从地图中找到下一处目标？</h2>
+<h3>1. 从机器人附近搜索</h3>
+<p>项目的前沿搜索以机器人位置为参考，优先寻找空闲起点，再通过广度优先搜索（BFS）向周围扩展。</p>
+<p>可以把 BFS 想成从当前位置一圈圈检查邻近格子。在这个过程中，程序寻找与空闲区域相邻的未知格，标记尚未处理的前沿候选。</p>
+<p>从当前位置附近展开搜索，有助于把候选区域与机器人所在的连通区域联系起来。不过，这只是栅格层面的条件。狭窄通道是否容得下车身、目标是否满足导航约束，仍需要后续规划与控制检查。</p>
+<h3>2. 把零散格子组成前沿区域</h3>
+<p>一扇门附近通常会出现多个相邻前沿格。逐格比较既零散，也不利于描述整个边界。</p>
+<p>项目通过八邻域关系聚合前沿格，也就是把横向、纵向和对角相邻的格子归为一组，再统计前沿大小、质心及距离等信息。过小的前沿还可以通过最小尺寸参数过滤。</p>
+<p>前沿大小反映的是边界的规模，不等于后方未知房间的面积。门口很窄，后面也可能连接一个大房间。</p>
+<h3>3. 比较距离与前沿大小</h3>
+<p>有了多个候选区域，接下来需要排序。项目的评分主要结合距离项与前沿大小项：距离越近越有利，前沿越大也越有利，最终选择代价较小的候选。</p>
+<div class="rl-table"><table>
+<thead>
+<tr>
+<th>参数</th>
+<th>控制的倾向</th>
+<th>增大后的通常影响</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>potential_scale</code></td>
+<td>对距离的重视程度</td>
+<td>更倾向选择较近的前沿</td>
+</tr>
+<tr>
+<td><code>gain_scale</code></td>
+<td>对前沿大小的重视程度</td>
+<td>更倾向选择较大的前沿</td>
+</tr>
+<tr>
+<td><code>min_frontier_size</code></td>
+<td>允许参与选择的最小前沿尺寸</td>
+<td>过滤更多碎小候选</td>
+</tr>
+</tbody>
+</table></div>
+<p>例如，附近有一块较短的边界，远处有一块较长的边界。距离权重较高时，机器人更容易先处理附近区域；前沿大小权重较高时，较远的大前沿可能获得更高优先级。</p>
+<p>这是一种基于当前地图的贪心选择。距离项使用前沿与机器人之间的几何距离信息，并不能直接代表绕过墙壁后的实际路径长度；前沿大小也只是潜在探索收益的近似指标。它没有计算访问所有前沿的全局最优顺序。</p>
+<h2 id="section-5">五、一次探索循环是怎样完成的？</h2>
+<p>继续使用“走廊旁边有一个未知房间”的例子。</p>
+<ol>
+<li><strong>获得当前地图和位姿。</strong>机器人扫描走廊，SLAM 更新已知空闲区域与墙体位置。</li>
+<li><strong>发现门口前沿。</strong>探索模块检测到门口附近的未知格与空闲区域相邻，形成候选前沿。</li>
+<li><strong>选择并下发目标。</strong>程序比较候选，选择目标位置，通过 Nav2 的 <code>NavigateToPose</code> 动作接口发送导航请求。</li>
+<li><strong>规划与执行。</strong>Nav2 根据代价地图规划路径，控制器持续生成运动指令，底盘执行。</li>
+<li><strong>重新观察与决策。</strong>机器人靠近门口后看见房间内部，地图中的部分未知区域转为已知，新的前沿出现在更深处，探索继续。</li>
+</ol>
+<p>导航结果也是后续决策的依据。目标失败或长时间没有进展时，探索模块需要避免一直重复无效尝试。项目提供了黑名单等处理机制，但它们依赖相关状态与阈值，不能代替对失败原因的排查。</p>
+<h2 id="section-6">六、为什么有了前沿算法，机器人仍可能探索失败？</h2>
+<h3>前沿存在，不代表目标一定可达</h3>
+<p>前沿区域的质心可能落在未知区域中，也可能位于不适合导航的位置。即使栅格上存在连接，机器人也可能因为车身宽度、障碍膨胀或转弯空间不足而无法通过。</p>
+<p>排查时，需要同时观察前沿标记、导航目标、代价地图和规划结果。必要的改进包括在前沿附近重新选择安全目标点，或先检查候选目标是否存在可行路径。</p>
+<h3>目标过近，可能没有产生有效探索</h3>
+<p>导航通常允许一定的位置与朝向误差。如果探索目标离当前位姿太近，落在到达容差范围内，导航可能很快判定成功，但机器人并没有明显移动，也就没有获得足够的新观测。</p>
+<p>若后续持续选到附近目标，就可能出现任务状态不断变化、地图却几乎不扩展的现象。设置最小目标距离、重新选择目标点，并联合检查导航容差，是可以考虑的改进方向。阈值应结合机器人尺寸、地图分辨率和传感器覆盖范围验证。</p>
+<h3>没有候选前沿，不一定意味着所有空间都已看清</h3>
+<p>碎小前沿可能被阈值过滤，一些区域可能暂时不可达，地图本身也可能存在缺口。判断探索效果时，应同时观察剩余未知区域、可通行范围和失败记录，而不能只看程序是否停止。</p>
+<h2 id="section-7">七、多机器人地图融合，还需要哪些协同能力？</h2>
+<p>m-explore-ros2 还包含多机器人地图融合能力。它可以利用已知初始位姿对齐地图，也支持估计相对变换的模式；实际融合效果取决于地图特征、重叠程度等条件。</p>
+<p>把各机器人的地图拼接起来，解决的是环境表示的对齐问题。若希望多台机器人减少重复探索，还需要回答：哪些前沿已经由其他机器人负责？任务怎样分配？发生冲突后如何重新安排？</p>
+<p>因此，在这个项目基础上实现更完整的协同探索，还需要补充前沿共享、任务分配和多机运动协调等模块。地图融合可以提供共同的环境参照，后续决策逻辑仍需单独设计。</p>
+<h2 id="section-8">八、从哪里开始验证自己的理解？</h2>
+<p>第一次实践可以先关注单机器人闭环：确认 SLAM 与 Nav2 正常运行，再接入探索节点，并在 RViz 中同时查看地图、机器人位置、前沿标记和导航目标。</p>
+<p>之后固定环境，每次只调整一类参数，观察目标选择与行驶行为如何变化。例如，比较距离权重变化后，机器人是否更偏向就近探索；再检查最小前沿尺寸是否过滤了仍有价值的区域。</p>
+<p>前沿探索把“下一步去哪”转化成了地图上的候选检测与排序问题。理解这条链路后，再分析导航失败、选点效率或多机任务分配，就能明确问题发生在哪一层，以及需要补充什么能力。</p>
+<h2 id="section-9">参考资料</h2>
+<ul>
+<li><a href="https://github.com/robo-friends/m-explore-ros2">m-explore-ros2 项目与使用说明</a></li>
+<li><a href="https://github.com/robo-friends/m-explore-ros2/blob/main/explore/src/frontier_search.cpp">前沿搜索实现：frontier_search.cpp</a></li>
+<li><a href="https://github.com/robo-friends/m-explore-ros2/blob/main/explore/src/explore.cpp">探索节点实现：explore.cpp</a></li>
+<li><a href="https://docs.nav2.org/">Nav2 官方文档</a></li>
+<li><a href="https://api.nav2.org/actions/jazzy/navigatetopose.html">Nav2 NavigateToPose 动作接口</a></li>
+</ul>
+<p>本文介绍原理与实现思路，不包含个人仿真或真机实测结果。项目实现与配置可能随版本变化，部署时应以所用分支及 ROS 2 发行版为准。</p></div> </article> </div> <!-- 全站搜索数据 --> <footer class="site-footer"><div class="footer-top"><a class="footer-brand" href="/"><svg aria-hidden="true" fill="none" viewbox="0 0 32 32"><path d="M11 8L3 16l8 8m10-16 8 8-8 8M19 4l-6 24" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.4"></path></svg>cisyam<span>.</span></a><p>探索技术的边界，记录每一步成长。</p><a href="#top">BACK TO TOP ↑</a></div><div><span>© 2026 cisyam555 · cisyam · 技术手记</span><span>KEEP LEARNING. KEEP BUILDING.</span><a href="https://github.com/cisyam555" rel="noopener noreferrer" target="_blank">GitHub ↗</a></div><p class="scene-credit">场景图：<a href="https://www.ghibli.jp/works/laputa/" rel="noopener noreferrer" target="_blank">《天空之城》· 吉卜力工作室</a> © 1986 Hayao Miyazaki/Studio Ghibli</p></footer><dialog id="search-dialog"><form method="dialog"><label for="site-search">在小站里找一找</label><button aria-label="关闭搜索">×</button></form><input autocomplete="off" id="site-search" placeholder="输入标题或标签，例如 ROS、Python…" type="search"/><div aria-live="polite" id="search-results"></div><small>ESC 关闭 · Ctrl / ⌘ K 打开搜索</small></dialog></body> </html>
